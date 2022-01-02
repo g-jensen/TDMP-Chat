@@ -16,18 +16,14 @@ local bindOpenChat = "t"
 local chatState = "default"
 local messages = {}
 
-local steamId = TDMP_LocalSteamId()
-
-local clientNick = nil
-
 gTDMPScale = 0
 
 function init()
 end
 
-
+local clientNick = nil
 function tick(dt)
-    if localNick then return end
+    if clientNick then return end
 
     for i, ply in ipairs(TDMP_GetPlayers()) do
         if TDMP_IsMe(ply.id) then
@@ -41,10 +37,10 @@ function update(dt)
 end
 
 TDMP_RegisterEvent("MessageSent", function(message)
+    table.insert(messages,message)
 	if not TDMP_IsServer() then
-        table.insert(messages,message)
         return
-    end -- if not a host, insert
+    end -- if not a host stop
 
 	TDMP_ServerStartEvent("MessageSent", {
 		Receiver = TDMP.Enums.Receiver.ClientsOnly,
@@ -83,7 +79,6 @@ function handleKeyPress()
     if (enter or InputPressed("esc")) then 
         if (input ~= "" and enter) then 
             input = clientNick..": "..input
-            table.insert(messages,input)
             TDMP_ClientStartEvent("MessageSent", {
                 Receiver = TDMP.Enums.Receiver.ClientsOnly,
                 Reliable = true,
