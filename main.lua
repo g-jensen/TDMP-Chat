@@ -5,6 +5,7 @@
 if not TDMP_LocalSteamId then DebugPrint("[TDMP Chat] TDMP Isn't launched!") return end
 
 #include "tdmp/networking.lua"
+#include "tdmp/player.lua"
 
 local alphabet = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'}
 local numbers = {'0','1','2','3','4','5','6','7','8','9'}
@@ -12,9 +13,17 @@ local input = ""
 local bindOpenChat = "t"
 local chatState = "default"
 local messages = {}
+
+local steamId = TDMP_LocalSteamId()
+
+local player = {}
+
 gTDMPScale = 0
 
 function init()
+    -- for i, ply in ipairs(TDMP_GetPlayers()) do
+    --     DebugPrint(ply.steamId)
+    -- end
 end
 
 function tick(dt)
@@ -24,13 +33,15 @@ function update(dt)
 end
 
 TDMP_RegisterEvent("MessageSent", function(message)
-	if not TDMP_IsServer() then table.insert(messages,message) end -- if not a host, then dont do anything
+	if not TDMP_IsServer() then
+        table.insert(messages,message)
+    end -- if not a host, insert
 
 	TDMP_ServerStartEvent("MessageSent", {
 		Receiver = TDMP.Enums.Receiver.ClientsOnly,
 		Reliable = true,
 
-		DontPack = true, -- we're sending only steamId so it don't need to be packed as json
+		DontPack = true,
 		Data = message
 	})
 end)
@@ -59,8 +70,10 @@ function handleKeyPress()
         input = string.sub(input,1,#input-1)
     end
 
-    if (InputPressed("return") or InputPressed("esc")) then 
-        if (input ~= "") then 
+    local enter = InputPressed("return")
+    if (enter or InputPressed("esc")) then 
+        if (input ~= "" and enter) then 
+            input = steamId..": "..input
             table.insert(messages,input)
             TDMP_ClientStartEvent("MessageSent", {
                 Receiver = TDMP.Enums.Receiver.ClientsOnly,
