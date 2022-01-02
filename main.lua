@@ -1,8 +1,13 @@
---This script will run on all levels when mod is active.
---Modding documentation: http://teardowngame.com/modding
---API reference: http://teardowngame.com/modding/api.html
+--[[ TODO:
+      -add movable cursor
+        -add del button
+      -preety it up
+      -add selecting by shift
+      -add jumping cursor by ctrl
+        -add selecting by shift + crtl
 
---if not TDMP_LocalSteamId then DebugPrint("[TDMP Chat] TDMP Isn't launched!") return end
+]]
+
 
 #include "tdmp/networking.lua"
 #include "tdmp/player.lua"
@@ -11,12 +16,12 @@
 
 if TDMP_LocalSteamId then local TDMP_present = true else local TDMP_present = false end
 
-local keys = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","y","u","z",
+local keys = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
         "1","2","3","4","5","6","7","8","9","0",
         "-","+",",","."}
 local keys_shifted = {"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
                 "!","@","#","$","%","^","&","*","(",")",
-                "_","=","<",">"}
+                "_","DO NOT USE","<",">"}
 
 -- holds the characters being input in the chat box
 local chat_msg = ""
@@ -30,7 +35,7 @@ local messages = {}
 gTDMPScale = 0
 
 function init()
-  if TDMP_present == false then DebugPrint("[TDMP Chat] TDMP is not present, chat mod will be disbled") end
+    if TDMP_present == false then DebugPrint("[TDMP Chat] TDMP is not present, chat mod will be disbled") end
 end
 
 -- tick function just gets the client nickname for now
@@ -67,63 +72,45 @@ end)
 function handleKeyInput()
     UiMakeInteractive()
     for i=1,#keys,1 do
-      --print(i)
-      if InputPressed(keys[i]) --[[and clicked == false]] then
-        print(keys[i])
-        if InputDown("shift") then
-          chat_msg = chat_msg..keys_shifted[i]
-        else
-          chat_msg = chat_msg..keys[i]
+        if InputPressed(keys[i]) and i ~= 38 then
+              if InputDown("shift") then
+                  chat_msg = chat_msg..keys_shifted[i]
+              else
+                  chat_msg = chat_msg..keys[i]
+              end
+        elseif InputPressed(keys[i]) and i == 38 then
+            if InputDown("shift") then --fixes weird =/+ handling
+                chat_msg = chat_msg.."+"
+            else
+                chat_msg = chat_msg.."="
+            end
         end
-        --clicked = true
-      elseif not InputDown("any") and clicked == true then
-        --clicked = false
-      end
     end
     if InputPressed("space") then
-      print("space")
-      chat_msg = chat_msg.." "
+        chat_msg = chat_msg.." "
     end
 
 
     if InputPressed("return") then
-      print("enter lol")
-      chat_msg = clientNick..": "..chat_msg
-      TDMP_ClientStartEvent("MessageSent", {
-          Receiver = TDMP.Enums.Receiver.ClientsOnly,
-          Reliable = true,
+        if (string.gsub(chat_msg, " ", "") == "") then
+            chatState = false
+            return
+        end
+        chat_msg = clientNick..": "..chat_msg
+        TDMP_ClientStartEvent("MessageSent", {
+            Receiver = TDMP.Enums.Receiver.ClientsOnly,
+            Reliable = true,
 
-          DontPack = true,
-          Data = chat_msg
-      })
-      --chat_input = false
-      chatState = false
-      chat_msg = ""
+            DontPack = true,
+            Data = chat_msg
+        })
+        chatState = false
+        chat_msg = ""
     end
 
     if (InputPressed("backspace")) then
         chat_msg = string.sub(chat_msg,1,#chat_msg-1)
     end
-
-
-    --local enter = InputPressed("return")
-
-  --[[
-    if (enter or InputPressed("esc")) then
-        if (chat_msg ~= "" and enter) then
-            chat_msg = clientNick..": "..chat_msg
-            TDMP_ClientStartEvent("MessageSent", {
-                Receiver = TDMP.Enums.Receiver.ClientsOnly,
-                Reliable = true,
-
-                DontPack = true,
-                Data = chat_msg
-            })
-        end
-        chat_msg = ""
-        chatState = false
-    end
-    ]]
 end
 
 function drawChatBox(scale)
