@@ -2,6 +2,11 @@
 --Modding documentation: http://teardowngame.com/modding
 --API reference: http://teardowngame.com/modding/api.html
 
+if not TDMP_LocalSteamId then DebugPrint("[TDMP Chat] TDMP Isn't launched!") return end
+
+#include "tdmp/networking.lua"
+
+
 local alphabet = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'}
 local numbers = {'0','1','2','3','4','5','6','7','8','9'}
 local input = ""
@@ -19,6 +24,24 @@ end
 
 function update(dt)
 end
+
+TDMP_RegisterEvent("MessageSent", function(message)
+	--DebugPrint(message)
+
+	--[[-------------------------------------------------------------------------
+	Host receives this event firstly, and then if we need to let all other clients
+	know that somebody pressed X, we need to broadcast it to everybody except us (server, i.e. host)
+	---------------------------------------------------------------------------]]
+	if not TDMP_IsServer() then table.insert(messages,message) end -- so if not a host, then dont do anything
+
+	TDMP_ServerStartEvent("MessageSent", {
+		Receiver = TDMP.Enums.Receiver.ClientsOnly, -- We've received that event already so we need to broadcast it only to clients, not again to ourself
+		Reliable = true,
+
+		DontPack = true, -- we're sending only steamId so it don't need to be packed as json
+		Data = message
+	})
+end)
 
 function handleKeyPress()
     UiMakeInteractive()
@@ -45,7 +68,16 @@ function handleKeyPress()
     end
 
     if (InputPressed("return") or InputPressed("esc")) then 
-        if (input ~= "") then table.insert(messages,input) end
+        if (input ~= "") then 
+            table.insert(messages,input)
+            TDMP_ClientStartEvent("MessageSent", {
+                Receiver = TDMP.Enums.Receiver.ClientsOnly,
+                Reliable = true,
+        
+                DontPack = true,
+                Data = input
+            })
+        end
         input = ""
         chatState = "default"
     end
