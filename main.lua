@@ -1,29 +1,41 @@
---This script will run on all levels when mod is active.
---Modding documentation: http://teardowngame.com/modding
---API reference: http://teardowngame.com/modding/api.html
+--[[ TODO:
+      -add movable cursor
+        -add del button
+      -preety it up
+      -add selecting by shift
+      -add jumping cursor by ctrl
+        -add selecting by shift + crtl
 
-if not TDMP_LocalSteamId then DebugPrint("[TDMP Chat] TDMP Isn't launched!") return end
+]]
+
 
 #include "tdmp/networking.lua"
 #include "tdmp/player.lua"
 #include "tdmp/hooks.lua"
 #include "tdmp/json.lua"
 
-local alphabet = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'}
-local numbers = {'0','1','2','3','4','5','6','7','8','9'}
+if TDMP_LocalSteamId then local TDMP_present = true else local TDMP_present = false end
+
+local keys = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
+        "1","2","3","4","5","6","7","8","9","0",
+        "-","+",",","."}
+local keys_shifted = {"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
+                "!","@","#","$","%","^","&","*","(",")",
+                "_","DO NOT USE","<",">"}
 
 -- holds the characters being input in the chat box
-local input = ""
+local chat_msg = ""
 
 local bindOpenChat = "t"
 
--- chatState can be "default" or "typing"
-local chatState = "default"
+-- chatState can be false or true
+local chatState = false
 local messages = {}
 
 gTDMPScale = 0
 
 function init()
+    if TDMP_present == false then DebugPrint("[TDMP Chat] TDMP is not present, chat mod will be disbled") end
 end
 
 -- tick function just gets the client nickname for now
@@ -57,50 +69,53 @@ TDMP_RegisterEvent("MessageSent", function(message)
 	})
 end)
 
-function handleKeyPress()
+function handleKeyInput()
     UiMakeInteractive()
-    for i=1,#alphabet,1 do
-        local key = alphabet[i]
-        if InputPressed(key) then
-            input = input..key
+    for i=1,#keys,1 do
+        if InputPressed(keys[i]) and i ~= 38 then
+              if InputDown("shift") then
+                  chat_msg = chat_msg..keys_shifted[i]
+              else
+                  chat_msg = chat_msg..keys[i]
+              end
+        elseif InputPressed(keys[i]) and i == 38 then
+            if InputDown("shift") then --fixes weird =/+ handling
+                chat_msg = chat_msg.."+"
+            else
+                chat_msg = chat_msg.."="
+            end
         end
+    end
+    if InputPressed("space") then
+        chat_msg = chat_msg.." "
     end
 
-    for i=1,#numbers,1 do
-        local key = numbers[i]
-        if InputPressed(key) then
-            input = input..key
+
+    if InputPressed("return") then
+        if (string.gsub(chat_msg, " ", "") == "") then
+            chatState = false
+            return
         end
-    end
-    
-    if (InputPressed("space")) then
-        input = input.." "
+        chat_msg = clientNick..": "..chat_msg
+        TDMP_ClientStartEvent("MessageSent", {
+            Receiver = TDMP.Enums.Receiver.ClientsOnly,
+            Reliable = true,
+
+            DontPack = true,
+            Data = chat_msg
+        })
+        chatState = false
+        chat_msg = ""
     end
 
     if (InputPressed("backspace")) then
-        input = string.sub(input,1,#input-1)
-    end
-
-    local enter = InputPressed("return")
-    if (enter or InputPressed("esc")) then 
-        if (input ~= "" and enter) then 
-            input = clientNick..": "..input
-            TDMP_ClientStartEvent("MessageSent", {
-                Receiver = TDMP.Enums.Receiver.ClientsOnly,
-                Reliable = true,
-        
-                DontPack = true,
-                Data = input
-            })
-        end
-        input = ""
-        chatState = "default"
+        chat_msg = string.sub(chat_msg,1,#chat_msg-1)
     end
 end
 
 function drawChatBox(scale)
 
-    handleKeyPress()
+    handleKeyInput()
 
     local open = true
     local w = 500
@@ -124,7 +139,7 @@ function drawChatBox(scale)
         UiColor(1,1,1)
         UiAlign("left")
         UiTranslate(15, h)
-        UiText(input)
+        UiText(chat_msg)
 	UiPop()
 
     -- chat messages
@@ -145,14 +160,14 @@ function drawChatBox(scale)
 end
 
 function draw(dt)
-    if chatState == "typing" then
+    if chatState == true then
         if gTDMPScale > 0 then
             UiPush()
                 UiColor(0.7,0.7,0.7, 0.25*gTDMPScale)
                 UiModalBegin()
                 if not drawChatBox(gTDMPScale) then
                     SetValue("gTDMPScale", 0, "cosine", 0.25)
-                    chatState = "default"
+                    chatState = false
                 end
                 UiModalEnd()
             UiPop()
@@ -173,8 +188,8 @@ function draw(dt)
         UiText(text)
 	UiPop()
 
-    if InputPressed(bindOpenChat) and chatState == "default" then
-        chatState = "typing"
+    if InputPressed(bindOpenChat) and chatState == false then
+        chatState = true
         SetValue("gTDMPScale", 1, "cosine", 0.25)
     end
 end
