@@ -35,6 +35,7 @@ end
 TDMP_RegisterEvent("MessageSent", function(message)
 	if not TDMP_IsServer() then
         table.insert(messages,message)
+        return
     end -- if not a host, insert
 
 	TDMP_ServerStartEvent("MessageSent", {
