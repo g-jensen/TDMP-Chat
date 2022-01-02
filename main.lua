@@ -6,6 +6,8 @@ if not TDMP_LocalSteamId then DebugPrint("[TDMP Chat] TDMP Isn't launched!") ret
 
 #include "tdmp/networking.lua"
 #include "tdmp/player.lua"
+#include "tdmp/hooks.lua"
+#include "tdmp/json.lua"
 
 local alphabet = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'}
 local numbers = {'0','1','2','3','4','5','6','7','8','9'}
@@ -16,17 +18,23 @@ local messages = {}
 
 local steamId = TDMP_LocalSteamId()
 
-local player = {}
+local clientNick = nil
 
 gTDMPScale = 0
 
 function init()
-    -- for i, ply in ipairs(TDMP_GetPlayers()) do
-    --     DebugPrint(ply.steamId)
-    -- end
 end
 
+
 function tick(dt)
+    if localNick then return end
+
+    for i, ply in ipairs(TDMP_GetPlayers()) do
+        if TDMP_IsMe(ply.id) then
+            clientNick = ply.nick
+            break
+        end
+    end
 end
 
 function update(dt)
@@ -74,7 +82,7 @@ function handleKeyPress()
     local enter = InputPressed("return")
     if (enter or InputPressed("esc")) then 
         if (input ~= "" and enter) then 
-            input = steamId..": "..input
+            input = clientNick..": "..input
             table.insert(messages,input)
             TDMP_ClientStartEvent("MessageSent", {
                 Receiver = TDMP.Enums.Receiver.ClientsOnly,
