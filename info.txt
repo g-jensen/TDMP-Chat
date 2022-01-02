@@ -1,4 +1,4 @@
-name = Teardown Multiplayer Chat Mod
+name = TDMP Chat
 author = greg1#2896
 description = Allows messaging in-game with the TDMP mod
 tags=

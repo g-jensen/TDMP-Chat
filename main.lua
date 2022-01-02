@@ -59,6 +59,7 @@ function drawChatBox(scale)
     local w = 500
     local h = 700
 
+    -- chat box
     UiPush()
         UiScale(scale)
         UiColorFilter(1, 1, 1, scale)
@@ -70,6 +71,7 @@ function drawChatBox(scale)
         end
     UiPop()
 
+    -- text being input
     UiPush()
         UiFont("bold.ttf", 32)
         UiColor(1,1,1)
@@ -78,6 +80,7 @@ function drawChatBox(scale)
         UiText(input)
 	UiPop()
 
+    -- chat messages
     UiPush()
         UiFont("bold.ttf", 32)
         UiColor(1,1,1)
