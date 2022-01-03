@@ -63,6 +63,26 @@ local chat_messages_buffer = {}
 
 gTDMPScale = 0
 
+if TDMP_present then -- all of the TDMP network events initiations
+    TDMP_RegisterEvent("MessageSent", function(message)
+        decode_msg(message)
+        if not TDMP_IsServer() then
+            return
+        end -- if not a host stop
+
+    TDMP_ServerStartEvent("MessageSent", {
+        Receiver = TDMP.Enums.Receiver.ClientsOnly,
+        Reliable = true,
+
+        DontPack = true,
+        Data = message
+        })
+    end)
+    TDMP_RegisterEvent("gather_nicks", function()
+        gather_nicks()
+    end)
+end
+
 function init()
     -- for now sends nick gathering event
     TDMP_ServerStartEvent("gather_nicks", {
@@ -73,7 +93,7 @@ function init()
 		Data = ""
 	})
 
-
+end
 -- tick function just gets the client nickname for now
 --[[
 function tick_chat() end
@@ -97,25 +117,6 @@ function gather_nicks()
     end
 end
 
-if TDMP_present then -- all of the TDMP network events initiations
-    TDMP_RegisterEvent("MessageSent", function(message)
-        decode_msg(message)
-        if not TDMP_IsServer() then
-            return
-        end -- if not a host stop
-
-    TDMP_ServerStartEvent("MessageSent", {
-        Receiver = TDMP.Enums.Receiver.ClientsOnly,
-        Reliable = true,
-
-        DontPack = true,
-        Data = message
-        })
-    end)
-    TDMP_RegisterEvent("gather_nicks", function()
-        gather_nicks()
-    end)
-end
 
 function chat_box_interactive()
     UiMakeInteractive()
