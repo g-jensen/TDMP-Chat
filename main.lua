@@ -34,12 +34,17 @@ local font_size = 20
 -- TDMP checker
 local TDMP_present = false
 if TDMP_LocalSteamId then TDMP_present = true end
+if TDMP_present == false then 
+    DebugPrint("[TDMP Chat] TDMP is not present, chat mod will be disbled") 
+else
 
 -- holds the characters being input in the chat box
 local buffer = ""
 local payload = "" -- stuff we send to server
 
 local bindOpenChat = "t"
+
+local stupid_workaround_for_not_working_init_function = false
 
 local nicks = {} --holds TDMP ids and coresponding nick
 
@@ -53,31 +58,24 @@ local chat_messages_buffer = {}
 
 gTDMPScale = 0
 
-function init()
-    if TDMP_present == false then 
-        DebugPrint("[TDMP Chat] TDMP is not present, chat mod will be disbled") 
-    else
-        for i, ply in ipairs(TDMP_GetPlayers()) do
-            nicks[ply.id] = tostring(ply.nick)
-            if TDMP_IsMe(ply.id) then
-                --clientNick = ply.nick
-                --client_steamId = ply.steamId
-                client_id = ply.id
-                break
-            end
-        end
-    end
-
-    --DebugPrint(client_steamId)
-    DebugPrint(client_id)
-
-
-end
 
 -- tick function just gets the client nickname for now
 
 function tick_chat(dt)
-   -- if clientNick then return end
+
+    --wacky init() function
+    if stupid_workaround_for_not_working_init_function then return end
+
+    for i, ply in ipairs(TDMP_GetPlayers()) do
+        nicks[ply.id] = ply.nick
+        if TDMP_IsMe(ply.id) then
+            --clientNick = ply.nick
+            --client_steamId = ply.steamId
+            client_id = ply.id
+            break
+        end
+    end
+    stupid_workaround_for_not_working_init_function = true
 end
 
 function tick()
@@ -89,7 +87,7 @@ end
 
 if TDMP_present then
     TDMP_RegisterEvent("MessageSent", function(message)
-        table.insert(chat_messages_buffer,("just for testing:"..message))
+        --table.insert(chat_messages_buffer,("just for testing:"..message))
         decode_msg(message)
         if not TDMP_IsServer() then
             return
@@ -238,8 +236,8 @@ function decode_msg(msg_in)
     DebugPrint("payload "..msg_in)
     local sender_id = tonumber(string.sub(msg_in, 1, 1))
     local msg = string.sub(msg_in, 2, -1)
-    decoded_msg = nicks[sender_id]..msg
-    table.insert(chat_messages_buffer,decoded_msg)
+    --decoded_msg = nicks[sender_id]..msg
+    --table.insert(chat_messages_buffer,decoded_msg)
     decoded_msg = nicks[sender_id]..": "..msg
     table.insert(chat_messages_buffer,decoded_msg)
     DebugPrint("id "..sender_id)
