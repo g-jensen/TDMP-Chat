@@ -63,13 +63,29 @@ local chat_messages_buffer = {}
 
 gTDMPScale = 0
 
+function init()
+    -- for now sends nick gathering event
+    TDMP_ServerStartEvent("gather_nicks", {
+		Receiver = TDMP.Enums.Receiver.ClientsOnly, -- As a host we don't need to send that event to ourself
+		Reliable = true,
+
+		DontPack = true, -- We're sending empty string so no need to pack it or do anything with it
+		Data = ""
+	})
+
 
 -- tick function just gets the client nickname for now
+--[[
+function tick_chat() end
 
-function tick_chat()
+function tick()
+    if TDMP_present then tick_chat() end --only run chat script id TDMP is present
+end
 
-    --workaround for initializing stuff after host connects
-    if client_id then return end
+function update(dt)
+end ]]
+
+function gather_nicks()
     for i, ply in ipairs(TDMP_GetPlayers()) do
         nicks[ply.id] = ply.nick
         if TDMP_IsMe(ply.id) then
@@ -81,14 +97,7 @@ function tick_chat()
     end
 end
 
-function tick()
-    if TDMP_present then tick_chat() end --only run chat script id TDMP is present
-end
-
-function update(dt)
-end
-
-if TDMP_present then
+if TDMP_present then -- all of the TDMP network events initiations
     TDMP_RegisterEvent("MessageSent", function(message)
         decode_msg(message)
         if not TDMP_IsServer() then
@@ -102,6 +111,9 @@ if TDMP_present then
         DontPack = true,
         Data = message
         })
+    end)
+    TDMP_RegisterEvent("gather_nicks", function()
+        gather_nicks()
     end)
 end
 
@@ -238,6 +250,9 @@ function decode_msg(msg_in)
     local decoded_msg = ""
     local sender_id = tonumber(string.sub(msg_in, 1, 1))
     local msg = string.sub(msg_in, 2, -1)
+    DebugPrint("id "..sender_id)
+    DebugPrint("msg" ..msg)
+    DebugPrint("nick "..nicks[sender_id])
     decoded_msg = nicks[sender_id]..": "..msg
     table.insert(chat_messages_buffer,decoded_msg)
 end
