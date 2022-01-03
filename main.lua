@@ -6,7 +6,6 @@
     -add jumping cursor by ctrl
         -add selecting by shift + crtl
     -add options.lua
-        -font size
         -buffer size
         -position
         -death messages
@@ -74,29 +73,41 @@ end)
 
 Hook_AddListener("ConnectedToServer", "Connected_server_test", function(jsonData)
 
-	DebugPrint("hook test")
+	get_nicks()
 end)
 
+Hook_AddListener("TDMP_PlayerDamaged", "PrintStuffWhenDamageSomebody", function(jsonData)
+	local data = json.decode(jsonData)
 
+	DebugPrint(data.ID .. " was damaged in " .. data.Hit .. "(" .. data.Damage .. ")")
+    print(jsonData)
+
+
+end)
 -- tick function just gets the client nickname for now
 
 function tick()
     TDMP_Hook_Queue()
+end
 
-    --workaround for initializing stuff after host connects
-    if client_id then return end
-    for i, ply in ipairs(TDMP_GetPlayers()) do
-        nicks[ply.id] = ply.nick
-        DebugPrint("TDMP id: "..ply.id.." nick: "..nicks[ply.id])
-        if TDMP_IsMe(ply.id) then
-            --clientNick = ply.nick
-            --client_steamId = ply.steamId
-            client_id = ply.id
-            break
+function get_nicks()
+    if #TDMP_GetPlayers() ~= 1 then
+        for i, ply in ipairs(TDMP_GetPlayers()) do
+            nicks[ply.id] = ply.nick
+            DebugPrint("TDMP id: "..ply.id.." nick: "..nicks[ply.id])
+            if TDMP_IsMe(ply.id) then
+                --clientNick = ply.nick
+                --client_steamId = ply.steamId
+                client_id = ply.id
+                break
+            end
         end
     end
 end
 
+function init()
+    get_nicks()
+end
 
 function update(dt)
 end
