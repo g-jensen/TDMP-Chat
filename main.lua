@@ -19,7 +19,10 @@
 #include "tdmp/hooks.lua"
 #include "tdmp/json.lua"
 
-
+if not TDMP_LocalSteamId then 
+    DebugPrint("[TDMP Chat] TDMP is not present, chat mod will be disbled")
+    return
+end
 
 if GetInt("savegame.mod.textfontsize") == 0 then -- checks if registry has data
     DebugPrint("set def")
@@ -27,8 +30,6 @@ if GetInt("savegame.mod.textfontsize") == 0 then -- checks if registry has data
 	  SetInt("savegame.mod.textalpha", 50)
 	  SetInt("savegame.mod.textboxalpha", 50)
 end
-DebugPrint(GetInt("savegame.mod.textfontsize"))
-DebugPrint("works?")
 
 local keys = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
         "1","2","3","4","5","6","7","8","9","0",
@@ -44,23 +45,12 @@ local textalpha = GetInt("savegame.mod.textalpha") / 100
 local textboxalpha = GetInt("savegame.mod.textboxalpha") / 100
 local font_size = GetInt("savegame.mod.textfontsize")
 
--- TDMP checker
-local TDMP_present = false
-if TDMP_LocalSteamId then TDMP_present = true end
-if TDMP_present == false then 
-    DebugPrint("[TDMP Chat] TDMP is not present, chat mod will be disbled") 
-end
-
--- holds the characters being input in the chat box
-local buffer = ""
-local payload = "" -- stuff we send to server
+local buffer,payload = ""
 
 local bindOpenChat = "t"
 
 local nicks = {} --holds TDMP ids and coresponding nick
 
---local clientNick = nil -- holds nick for players
---local client_steamId = nil -- holds nick for players
 local client_id = nil -- hold this client TDMP id
 
 -- chatState - if chat input is open
@@ -69,15 +59,35 @@ local chat_messages_buffer = {}
 
 gTDMPScale = 0
 
+TDMP_RegisterEvent("MessageSent", function(message)
+    decode_msg(message)
+    if not TDMP_IsServer() then return end -- if not a host stop
+
+    TDMP_ServerStartEvent("MessageSent", {
+        Receiver = TDMP.Enums.Receiver.ClientsOnly,
+        Reliable = true,
+
+        DontPack = true,
+        Data = message
+        })
+end)
+
+Hook_AddListener("ConnectedToServer", "Connected_server_test", function(jsonData)
+
+	DebugPrint("hook test")
+end)
+
 
 -- tick function just gets the client nickname for now
 
-function tick_chat()
+function tick()
+    TDMP_Hook_Queue()
 
     --workaround for initializing stuff after host connects
     if client_id then return end
     for i, ply in ipairs(TDMP_GetPlayers()) do
         nicks[ply.id] = ply.nick
+        DebugPrint("TDMP id: "..ply.id.." nick: "..nicks[ply.id])
         if TDMP_IsMe(ply.id) then
             --clientNick = ply.nick
             --client_steamId = ply.steamId
@@ -87,29 +97,11 @@ function tick_chat()
     end
 end
 
-function tick()
-    if TDMP_present then tick_chat() end --only run chat script id TDMP is present
-end
 
 function update(dt)
 end
 
-if TDMP_present then
-    TDMP_RegisterEvent("MessageSent", function(message)
-        decode_msg(message)
-        if not TDMP_IsServer() then
-            return
-        end -- if not a host stop
 
-    TDMP_ServerStartEvent("MessageSent", {
-        Receiver = TDMP.Enums.Receiver.ClientsOnly,
-        Reliable = true,
-
-        DontPack = true,
-        Data = message
-        })
-    end)
-end
 
 function chat_box_interactive()
     UiMakeInteractive()
@@ -150,7 +142,7 @@ function chat_box_interactive()
     end
 
     if (InputPressed("backspace")) then
-        buffer = string.sub(buffer,1,#buffer-1)
+        buffer = string.sub(buffer,1,-2)
     end
 end
 
@@ -200,7 +192,7 @@ function drawChatBox(scale)
     return open
 end
 
-function draw_chat(dt)
+function draw(dt)
     if chatState == true then
         if gTDMPScale > 0 then
             UiPush()
@@ -217,7 +209,7 @@ function draw_chat(dt)
 
     UiPush()
         UiFont(font, font_size)
-        UiColor(1,1,1,textaplha)
+        UiColor(1,1,1,textalpha)
 
         UiAlign("left")
         UiTranslate(15, 30)
@@ -236,9 +228,6 @@ function draw_chat(dt)
     end
 end
 
-function draw()
-    if TDMP_present then draw_chat() end
-end
 
 function decode_msg(msg_in)
     local decoded_msg = ""
