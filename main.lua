@@ -66,7 +66,7 @@ gTDMPScale = 0
 function init()
     -- for now sends nick gathering event
     TDMP_ServerStartEvent("gather_nicks", {
-		Receiver = TDMP.Enums.Receiver.ClientsOnly, -- As a host we don't need to send that event to ourself
+		Receiver = TDMP.Enums.Receiver.All, -- As a host we don't need to send that event to ourself
 		Reliable = true,
 
 		DontPack = true, -- We're sending empty string so no need to pack it or do anything with it
