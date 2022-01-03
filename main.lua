@@ -33,6 +33,10 @@ local bindOpenChat = "t"
 local chatState = false
 local messages = {}
 
+local textalpha = GetString("savegame.mod.textalpha") / 100
+local textboxalpha = GetString("savegame.mod.textboxalpha") / 100
+local fontSize = GetInt("savegame.mod.textfontsize")
+
 gTDMPScale = 0
 
 function init()
@@ -132,7 +136,7 @@ function drawChatBox(scale)
     UiPush()
         UiScale(scale)
         UiColorFilter(1, 1, 1, scale)
-        UiColor(0,0,0, 0.5)
+        UiColor(0,0,0, textboxalpha)
         UiAlign("left top")
         UiImageBox("common/box-solid-shadow-50.png", w, h, -50, -50)
         if InputPressed("esc") or (not UiIsMouseInRect(UiWidth(), UiHeight()) and InputPressed("lmb")) then
@@ -142,8 +146,8 @@ function drawChatBox(scale)
 
     -- text being input
     UiPush()
-        UiFont("bold.ttf", 32)
-        UiColor(1,1,1)
+        UiFont("bold.ttf", fontSize)
+        UiColor(1,1,1,textalpha)
         UiAlign("left")
         UiTranslate(15, h)
         UiText(chat_msg)
@@ -151,8 +155,8 @@ function drawChatBox(scale)
 
     -- chat messages
     UiPush()
-        UiFont("bold.ttf", 32)
-        UiColor(1,1,1)
+        UiColor(1,1,1,textalpha)
+        UiFont("bold.ttf", fontSize)
         UiAlign("left")
         UiTranslate(15, 30)
         local text = ""
@@ -182,8 +186,8 @@ function draw_chat(dt)
     end
 
     UiPush()
-        UiFont("bold.ttf", 32)
-        UiColor(1,1,1)
+        UiFont("bold.ttf", fontSize)
+        UiColor(1,1,1,textalpha)
         UiAlign("left")
         UiTranslate(15, 30)
         local text = ""
