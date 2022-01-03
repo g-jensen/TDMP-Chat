@@ -83,17 +83,7 @@ if TDMP_present then -- all of the TDMP network events initiations
     end)
 end
 
-function init()
-    -- for now sends nick gathering event
-    TDMP_ServerStartEvent("gather_nicks", {
-		Receiver = TDMP.Enums.Receiver.All, -- As a host we don't need to send that event to ourself
-		Reliable = true,
 
-		DontPack = true, -- We're sending empty string so no need to pack it or do anything with it
-		Data = ""
-	})
-
-end
 -- tick function just gets the client nickname for now
 --[[
 function tick_chat() end
@@ -107,16 +97,29 @@ end ]]
 
 function gather_nicks()
     for i, ply in ipairs(TDMP_GetPlayers()) do
+        DebugPrint("TDMP id: "..ply.id)
         nicks[ply.id] = ply.nick
         if TDMP_IsMe(ply.id) then
             --clientNick = ply.nick
             --client_steamId = ply.steamId
             client_id = ply.id
+            DebugPrint(client_id)
             break
         end
     end
 end
 
+function init()
+    -- for now sends nick gathering event
+    TDMP_ServerStartEvent("gather_nicks", {
+		Receiver = TDMP.Enums.Receiver.All, -- As a host we don't need to send that event to ourself
+		Reliable = true,
+
+		DontPack = true, -- We're sending empty string so no need to pack it or do anything with it
+		Data = ""
+	})
+
+end
 
 function chat_box_interactive()
     UiMakeInteractive()
@@ -249,6 +252,7 @@ end
 
 function decode_msg(msg_in)
     local decoded_msg = ""
+    DebugPrint(msg_in)
     local sender_id = tonumber(string.sub(msg_in, 1, 1))
     local msg = string.sub(msg_in, 2, -1)
     DebugPrint("id "..sender_id)
