@@ -36,15 +36,13 @@ local TDMP_present = false
 if TDMP_LocalSteamId then TDMP_present = true end
 if TDMP_present == false then 
     DebugPrint("[TDMP Chat] TDMP is not present, chat mod will be disbled") 
-else
+end
 
 -- holds the characters being input in the chat box
 local buffer = ""
 local payload = "" -- stuff we send to server
 
 local bindOpenChat = "t"
-
-local stupid_workaround_for_not_working_init_function = false
 
 local nicks = {} --holds TDMP ids and coresponding nick
 
@@ -61,11 +59,10 @@ gTDMPScale = 0
 
 -- tick function just gets the client nickname for now
 
-function tick_chat(dt)
+function tick_chat()
 
-    --wacky init() function
-    if stupid_workaround_for_not_working_init_function then return end
-
+    --workaround for initializing stuff after host connects
+    if client_id then return end
     for i, ply in ipairs(TDMP_GetPlayers()) do
         nicks[ply.id] = ply.nick
         if TDMP_IsMe(ply.id) then
@@ -75,7 +72,6 @@ function tick_chat(dt)
             break
         end
     end
-    stupid_workaround_for_not_working_init_function = true
 end
 
 function tick()
@@ -87,7 +83,6 @@ end
 
 if TDMP_present then
     TDMP_RegisterEvent("MessageSent", function(message)
-        --table.insert(chat_messages_buffer,("just for testing:"..message))
         decode_msg(message)
         if not TDMP_IsServer() then
             return
@@ -233,14 +228,8 @@ end
 
 function decode_msg(msg_in)
     local decoded_msg = ""
-    DebugPrint("payload "..msg_in)
     local sender_id = tonumber(string.sub(msg_in, 1, 1))
     local msg = string.sub(msg_in, 2, -1)
-    --decoded_msg = nicks[sender_id]..msg
-    --table.insert(chat_messages_buffer,decoded_msg)
     decoded_msg = nicks[sender_id]..": "..msg
     table.insert(chat_messages_buffer,decoded_msg)
-    DebugPrint("id "..sender_id)
-    DebugPrint("msg" ..msg)
-    DebugPrint("nick "..nicks[sender_id])
 end
