@@ -14,7 +14,8 @@
 #include "tdmp/hooks.lua"
 #include "tdmp/json.lua"
 
-if TDMP_LocalSteamId then local TDMP_present = true else local TDMP_present = false end
+local TDMP_present = false
+if TDMP_LocalSteamId then TDMP_present = true end
 
 local keys = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
         "1","2","3","4","5","6","7","8","9","0",
@@ -40,7 +41,7 @@ end
 
 -- tick function just gets the client nickname for now
 local clientNick = nil
-function tick(dt)
+function tick_chat(dt)
     if clientNick then return end
 
     for i, ply in ipairs(TDMP_GetPlayers()) do
@@ -51,23 +52,29 @@ function tick(dt)
     end
 end
 
+function tick()
+    if TDMP_present then tick_chat() end --only run chat script id TDMP is present
+end
+
 function update(dt)
 end
 
-TDMP_RegisterEvent("MessageSent", function(message)
-    table.insert(messages,message)
-	if not TDMP_IsServer() then
-        return
-    end -- if not a host stop
+if TDMP_present then
+    TDMP_RegisterEvent("MessageSent", function(message)
+        table.insert(messages,message)
+        if not TDMP_IsServer() then
+            return
+        end -- if not a host stop
 
-	TDMP_ServerStartEvent("MessageSent", {
-		Receiver = TDMP.Enums.Receiver.ClientsOnly,
-		Reliable = true,
+    TDMP_ServerStartEvent("MessageSent", {
+        Receiver = TDMP.Enums.Receiver.ClientsOnly,
+        Reliable = true,
 
-		DontPack = true,
-		Data = message
-	})
-end)
+        DontPack = true,
+        Data = message
+        })
+    end)
+end
 
 function handleKeyInput()
     UiMakeInteractive()
@@ -159,7 +166,7 @@ function drawChatBox(scale)
     return open
 end
 
-function draw(dt)
+function draw_chat(dt)
     if chatState == true then
         if gTDMPScale > 0 then
             UiPush()
@@ -192,4 +199,8 @@ function draw(dt)
         chatState = true
         SetValue("gTDMPScale", 1, "cosine", 0.25)
     end
+end
+
+function draw()
+    if TDMP_present then draw_chat() end
 end
