@@ -19,6 +19,17 @@
 #include "tdmp/hooks.lua"
 #include "tdmp/json.lua"
 
+
+
+if GetInt("savegame.mod.textfontsize") == 0 then -- checks if registry has data
+    DebugPrint("set def")
+  	SetInt("savegame.mod.textfontsize", 20)
+	  SetInt("savegame.mod.textalpha", 50)
+	  SetInt("savegame.mod.textboxalpha", 50)
+end
+DebugPrint(GetInt("savegame.mod.textfontsize"))
+DebugPrint("works?")
+
 local keys = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
         "1","2","3","4","5","6","7","8","9","0",
         "-","+",",","."}
@@ -29,7 +40,9 @@ local keys_shifted = {"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O
 
 -- font info
 local font = "fonts/UbuntuMono-Regular.ttf"
-local font_size = 20
+local textalpha = GetInt("savegame.mod.textalpha") / 100
+local textboxalpha = GetInt("savegame.mod.textboxalpha") / 100
+local font_size = GetInt("savegame.mod.textfontsize")
 
 -- TDMP checker
 local TDMP_present = false
@@ -153,7 +166,7 @@ function drawChatBox(scale)
     UiPush()
         UiScale(scale)
         UiColorFilter(1, 1, 1, scale)
-        UiColor(0,0,0, 0.5)
+        UiColor(0,0,0, textboxalpha)
         UiAlign("left top")
         UiImageBox("common/box-solid-shadow-50.png", w, h, -50, -50)
         if InputPressed("esc") or (not UiIsMouseInRect(UiWidth(), UiHeight()) and InputPressed("lmb")) then
@@ -204,7 +217,8 @@ function draw_chat(dt)
 
     UiPush()
         UiFont(font, font_size)
-        UiColor(1,1,1)
+        UiColor(1,1,1,textaplha)
+
         UiAlign("left")
         UiTranslate(15, 30)
         local text = ""
