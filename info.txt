@@ -1,7 +1,7 @@
-name = TDMP Chat
+name = [TDMP] Chat
 author = greg1#2896 and nie ninja#3151
 description = Allows messaging in-game with the TDMP mod
-tags=
+tags= TDMP
 
 # If description contains [noupload] the description on Steam workshop will not be overwritten.
 # Available tags (comma-separated):
