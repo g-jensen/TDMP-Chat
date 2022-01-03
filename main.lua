@@ -14,15 +14,19 @@
 #include "tdmp/hooks.lua"
 #include "tdmp/json.lua"
 
-local TDMP_present = false
-if TDMP_LocalSteamId then TDMP_present = true end
+if not TDMP_LocalSteamId then DebugPrint("[TDMP Chat] TDMP is not present, chat mod will be disbled") return end
 
-local keys = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
-        "1","2","3","4","5","6","7","8","9","0",
-        "-","+",",","."}
-local keys_shifted = {"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
-                "!","@","#","$","%","^","&","*","(",")",
-                "_","DO NOT USE","<",">"}
+local keys = {
+    "a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
+    "1","2","3","4","5","6","7","8","9","0",
+    "-","+",",","."
+}
+
+local keys_shifted = {
+    "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
+    "!","@","#","$","%","^","&","*","(",")",
+    "_","DO NOT USE","<",">"
+}
 
 -- holds the characters being input in the chat box
 local chat_msg = ""
@@ -35,36 +39,22 @@ local messages = {}
 
 gTDMPScale = 0
 
-function init()
-    if TDMP_present == false then DebugPrint("[TDMP Chat] TDMP is not present, chat mod will be disbled") end
-end
-
--- tick function just gets the client nickname for now
 local clientNick = nil
-function tick_chat(dt)
-    if clientNick then return end
+local nicks = {}
 
-    for i, ply in ipairs(TDMP_GetPlayers()) do
-        if TDMP_IsMe(ply.id) then
-            clientNick = ply.nick
-            break
-        end
-    end
+local hasInit = false
+local hostHasConnected = false
+
+function init()
 end
 
-function tick()
-    if TDMP_present then tick_chat() end --only run chat script id TDMP is present
-end
+TDMP_RegisterEvent("MessageSent", function(message)
 
-function update(dt)
-end
+    table.insert(messages,message)
 
-if TDMP_present then
-    TDMP_RegisterEvent("MessageSent", function(message)
-        table.insert(messages,message)
-        if not TDMP_IsServer() then
-            return
-        end -- if not a host stop
+    if not TDMP_IsServer() then
+        return
+    end -- if not a host stop
 
     TDMP_ServerStartEvent("MessageSent", {
         Receiver = TDMP.Enums.Receiver.ClientsOnly,
@@ -72,8 +62,33 @@ if TDMP_present then
 
         DontPack = true,
         Data = message
-        })
-    end)
+    })
+
+end)
+
+function getNicks()
+    for i, ply in ipairs(TDMP_GetPlayers()) do
+        table.insert(nicks,ply.nick)
+        if TDMP_IsMe(ply.id) then
+            clientNick = ply.nick
+        end
+    end
+end
+
+-- server is initialized
+function server_init() 
+    for i = 1,#nicks,1 do
+        DebugPrint(nicks[i])
+    end
+end
+
+function tick(dt)
+    if clientNick then hostHasConnected = true else getNicks() end
+    if (hostHasConnected and hasInit ~= true) then server_init() hasInit = true end
+
+end
+
+function update(dt)
 end
 
 function handleKeyInput()
@@ -166,7 +181,7 @@ function drawChatBox(scale)
     return open
 end
 
-function draw_chat(dt)
+function draw_chat()
     if chatState == true then
         if gTDMPScale > 0 then
             UiPush()
@@ -202,5 +217,5 @@ function draw_chat(dt)
 end
 
 function draw()
-    if TDMP_present then draw_chat() end
+    draw_chat()
 end
