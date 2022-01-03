@@ -40,10 +40,6 @@ local font = "fonts/UbuntuMono-Regular.ttf"
 local textalpha = GetInt("savegame.mod.textalpha") / 100
 local textboxalpha = GetInt("savegame.mod.textboxalpha") / 100
 local font_size = GetInt("savegame.mod.textfontsize")
-DebugPrint(textalpha)
-DebugPrint(textboxalpha)
-DebugPrint(font_size)
-
 -- TDMP checker
 local TDMP_present = false
 if TDMP_LocalSteamId then TDMP_present = true end
@@ -59,8 +55,6 @@ local bindOpenChat = "t"
 
 local nicks = {} --holds TDMP ids and coresponding nick
 
---local clientNick = nil -- holds nick for players
---local client_steamId = nil -- holds nick for players
 local client_id = nil -- hold this client TDMP id
 
 -- chatState - if chat input is open
