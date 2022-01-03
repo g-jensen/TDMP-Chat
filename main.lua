@@ -14,6 +14,17 @@
 #include "tdmp/hooks.lua"
 #include "tdmp/json.lua"
 
+
+if GetInt("savegame.mod.textfontsize") == 0 then -- checks if registry has data
+    DebugPrint("set def")
+	SetInt("savegame.mod.textfontsize", 20)
+	SetInt("savegame.mod.textalpha", 50)
+	SetInt("savegame.mod.textboxalpha", 50)
+end
+DebugPrint(GetInt("savegame.mod.textfontsize"))
+DebugPrint("works?")
+
+
 local TDMP_present = false
 if TDMP_LocalSteamId then TDMP_present = true end
 
@@ -33,8 +44,8 @@ local bindOpenChat = "t"
 local chatState = false
 local messages = {}
 
-local textalpha = GetString("savegame.mod.textalpha") / 100
-local textboxalpha = GetString("savegame.mod.textboxalpha") / 100
+local textalpha = GetInt("savegame.mod.textalpha") / 100
+local textboxalpha = GetInt("savegame.mod.textboxalpha") / 100
 local fontSize = GetInt("savegame.mod.textfontsize")
 
 gTDMPScale = 0
@@ -147,7 +158,7 @@ function drawChatBox(scale)
     -- text being input
     UiPush()
         UiFont("bold.ttf", fontSize)
-        UiColor(1,1,1,textalpha)
+        UiColor(1,1,1,1)
         UiAlign("left")
         UiTranslate(15, h)
         UiText(chat_msg)
@@ -155,7 +166,7 @@ function drawChatBox(scale)
 
     -- chat messages
     UiPush()
-        UiColor(1,1,1,textalpha)
+        UiColor(1,1,1,1)
         UiFont("bold.ttf", fontSize)
         UiAlign("left")
         UiTranslate(15, 30)
