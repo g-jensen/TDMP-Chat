@@ -69,7 +69,7 @@ function init()
     end
 
     --DebugPrint(client_steamId)
-    --DebugPrint(client_id)
+    DebugPrint(client_id)
 
 
 end
@@ -89,7 +89,7 @@ end
 
 if TDMP_present then
     TDMP_RegisterEvent("MessageSent", function(message)
-        --table.insert(chat_messages_buffer,message)
+        table.insert(chat_messages_buffer,("just for testing:"..message))
         decode_msg(message)
         if not TDMP_IsServer() then
             return
@@ -235,8 +235,14 @@ end
 
 function decode_msg(msg_in)
     local decoded_msg = ""
+    DebugPrint("payload "..msg_in)
     local sender_id = tonumber(string.sub(msg_in, 1, 1))
     local msg = string.sub(msg_in, 2, -1)
+    decoded_msg = nicks[sender_id]..msg
+    table.insert(chat_messages_buffer,decoded_msg)
     decoded_msg = nicks[sender_id]..": "..msg
     table.insert(chat_messages_buffer,decoded_msg)
+    DebugPrint("id "..sender_id)
+    DebugPrint("msg" ..msg)
+    DebugPrint("nick "..nicks[sender_id])
 end
