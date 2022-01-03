@@ -11,8 +11,13 @@ if not TDMP_LocalSteamId then DebugPrint("[TDMP Chat] TDMP Isn't launched!") ret
 
 local alphabet = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'}
 local numbers = {'0','1','2','3','4','5','6','7','8','9'}
+
+-- holds the characters being input in the chat box
 local input = ""
+
 local bindOpenChat = "t"
+
+-- chatState can be "default" or "typing"
 local chatState = "default"
 local messages = {}
 
@@ -21,6 +26,7 @@ gTDMPScale = 0
 function init()
 end
 
+-- tick function just gets the client nickname for now
 local clientNick = nil
 function tick(dt)
     if clientNick then return end
