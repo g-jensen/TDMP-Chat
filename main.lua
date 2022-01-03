@@ -22,13 +22,10 @@
 
 
 if GetInt("savegame.mod.textfontsize") == 0 then -- checks if registry has data
-    DebugPrint("set def")
-  	SetInt("savegame.mod.textfontsize", 20)
-	  SetInt("savegame.mod.textalpha", 50)
-	  SetInt("savegame.mod.textboxalpha", 50)
+    SetInt("savegame.mod.textfontsize", 25)
+    SetInt("savegame.mod.textalpha", 50)
+    SetInt("savegame.mod.textboxalpha", 50)
 end
-DebugPrint(GetInt("savegame.mod.textfontsize"))
-DebugPrint("works?")
 
 local keys = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
         "1","2","3","4","5","6","7","8","9","0",
@@ -43,6 +40,9 @@ local font = "fonts/UbuntuMono-Regular.ttf"
 local textalpha = GetInt("savegame.mod.textalpha") / 100
 local textboxalpha = GetInt("savegame.mod.textboxalpha") / 100
 local font_size = GetInt("savegame.mod.textfontsize")
+DebugPrint(textalpha)
+DebugPrint(textboxalpha)
+DebugPrint(font_size)
 
 -- TDMP checker
 local TDMP_present = false
@@ -217,7 +217,7 @@ function draw_chat(dt)
 
     UiPush()
         UiFont(font, font_size)
-        UiColor(1,1,1,textaplha)
+        UiColor(1,1,1,textalpha)
 
         UiAlign("left")
         UiTranslate(15, 30)
