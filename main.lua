@@ -12,6 +12,7 @@
 
 ]]
 
+print("loading mod")
 
 #include "tdmp/networking.lua"
 #include "tdmp/player.lua"
@@ -19,12 +20,11 @@
 #include "tdmp/json.lua"
 
 if not TDMP_LocalSteamId then 
-    DebugPrint("[TDMP Chat] TDMP is not present, chat mod will be disbled")
+    DebugPrint("[TDMP Chat] TDMP is not present, chat mod will be disbled.")
     return
 end
 
-if GetInt("savegame.mod.textfontsize") == 0 then -- checks if registry has data
-    DebugPrint("set def")
+if GetInt("savegame.mod.textfontsize") == 0 then -- checks if registry has data, if not set default
   	SetInt("savegame.mod.textfontsize", 20)
 	  SetInt("savegame.mod.textalpha", 50)
 	  SetInt("savegame.mod.textboxalpha", 50)
@@ -52,6 +52,8 @@ local nicks = {} --holds TDMP ids and coresponding nick
 
 local client_id = nil -- hold this client TDMP id
 
+local cashed_nicks = false
+
 -- chatState - if chat input is open
 local chatState = false
 local chat_messages_buffer = {}
@@ -71,43 +73,46 @@ TDMP_RegisterEvent("MessageSent", function(message)
         })
 end)
 
-Hook_AddListener("ConnectedToServer", "Connected_server_test", function(jsonData)
+-- Hook_AddListener("ConnectedToServer", "Connected_server_test", function(jsonData)
 
-	get_nicks()
-    DebugPrint("getting nicks as client")
-end)
+-- 	get_nicks()
+--     DebugPrint("getting nicks as client")
+-- end)
 
-Hook_AddListener("TDMP_PlayerDamaged", "PrintStuffWhenDamageSomebody", function(jsonData)
-	local data = json.decode(jsonData)
+-- Hook_AddListener("TDMP_PlayerDamaged", "PrintStuffWhenDamageSomebody", function(jsonData)
+-- 	local data = json.decode(jsonData)
 
-	DebugPrint(data.ID .. " was damaged in " .. data.Hit .. "(" .. data.Damage .. ")")
-    --print(jsonData)
+-- 	DebugPrint(data.ID .. " was damaged in " .. data.Hit .. "(" .. data.Damage .. ")")
+--     --print(jsonData)
 
 
-end)
+-- end)
 
 function tick()
     TDMP_Hook_Queue()
 end
 
-function get_nicks()
-    for i, ply in ipairs(TDMP_GetPlayers()) do
-        nicks[ply.id] = ply.nick
-        DebugPrint("TDMP id: "..ply.id.." nick: "..nicks[ply.id])
-        if TDMP_IsMe(ply.id) then
-            --clientNick = ply.nick
-            --client_steamId = ply.steamId
-            client_id = ply.id
-            break
+function get_nick(id)
+    if not cashed_nicks then
+        for i, ply in ipairs(TDMP_GetPlayers()) do
+            nicks[ply.id] = ply.nick
+            DebugPrint("TDMP id: "..ply.id.." nick: "..nicks[ply.id])
+            if TDMP_IsMe(ply.id) then
+                client_id = ply.id
+            end
         end
+        cashed_nicks = true
+        get_nick(id)
+    end
+    if id == -1 then
+        return client_id
+    else
+        return nicks[id]
     end
 end
 
 
-if TDMP_IsServer() then
-    get_nicks()
-    DebugPrint("as server")
-end
+
 -- function init()
 --     if TDMP_IsServer() then 
 --         get_nicks() 
@@ -146,7 +151,7 @@ function chat_box_interactive()
             chatState = false
             return
         end
-        payload = tostring(client_id)..buffer
+        payload = tostring(get_nick(-1))..buffer
         TDMP_ClientStartEvent("MessageSent", {
             Receiver = TDMP.Enums.Receiver.ClientsOnly,
             Reliable = true,
@@ -250,6 +255,13 @@ function decode_msg(msg_in)
     local decoded_msg = ""
     local sender_id = tonumber(string.sub(msg_in, 1, 1))
     local msg = string.sub(msg_in, 2, -1)
-    decoded_msg = nicks[sender_id]..": "..msg
+    decoded_msg = get_nick(sender_id)..": "..msg
     table.insert(chat_messages_buffer,decoded_msg)
 end
+
+-- if TDMP_IsServer() then
+--     get_nicks()
+--     DebugPrint("as server")
+-- end
+
+print("mod loaded")

@@ -1,3 +1,9 @@
+if GetInt("savegame.mod.textfontsize") == 0 then -- checks if registry has data, if not set default
+	SetInt("savegame.mod.textfontsize", 20)
+	SetInt("savegame.mod.textalpha", 50)
+	SetInt("savegame.mod.textboxalpha", 50)
+end
+
 function optionsSlider(setting, def, mi, ma)
 	UiColor(1,1,0.5)
 	UiPush()
