@@ -29,9 +29,17 @@ local keys_shifted = {
 }
 
 -- holds the characters being input in the chat box
-local chat_msg = ""
+local input = ""
+local chat_msg = {}
+chat_msg["msg"] = ""
+chat_msg["sender_id"] = nil
 
 local bindOpenChat = "t"
+
+local font = "fonts/UbuntuMono-Regular.ttf"
+local textalpha = 1 --GetInt("savegame.mod.textalpha") / 100
+local textboxalpha = 0.5 --GetInt("savegame.mod.textboxalpha") / 100
+local font_size = 28 --GetInt("savegame.mod.textfontsize")
 
 -- chatState can be false or true
 local chatState = false
@@ -40,6 +48,7 @@ local messages = {}
 gTDMPScale = 0
 
 local clientNick = nil
+local clientId = nil
 local nicks = {}
 
 local hasInit = false
@@ -48,9 +57,18 @@ local hostHasConnected = false
 function init()
 end
 
+function update(dt)
+end
+
+function tick(dt)
+    if clientNick then hostHasConnected = true else getNicks() end
+    if (hostHasConnected and hasInit ~= true) then server_init() hasInit = true end
+
+end
+
 TDMP_RegisterEvent("MessageSent", function(message)
 
-    table.insert(messages,message)
+    decodeMessage(message)
 
     if not TDMP_IsServer() then
         return
@@ -68,70 +86,82 @@ end)
 
 function getNicks()
     for i, ply in ipairs(TDMP_GetPlayers()) do
-        table.insert(nicks,ply.nick)
+        nicks[ply.id] = ply.nick
         if TDMP_IsMe(ply.id) then
             clientNick = ply.nick
+            clientId = ply.id
         end
     end
 end
 
 -- server is initialized
 function server_init() 
-    for i = 1,#nicks,1 do
+    chat_msg["sender_id"] = clientId
+    
+    for i=0,#nicks,1 do
         DebugPrint(nicks[i])
     end
 end
 
-function tick(dt)
-    if clientNick then hostHasConnected = true else getNicks() end
-    if (hostHasConnected and hasInit ~= true) then server_init() hasInit = true end
+function sendMessage(message) 
+    chat_msg["msg"] = input
+    TDMP_ClientStartEvent("MessageSent", {
+        Receiver = TDMP.Enums.Receiver.ClientsOnly,
+        Reliable = true,
 
+        DontPack = false,
+        Data = {chat_msg["msg"],chat_msg["sender_id"]}
+    })
 end
 
-function update(dt)
+function decodeMessage(message)
+    message = json.decode(message)
+    local msg = message[1]
+    local sender = ""
+    for i, ply in ipairs(TDMP_GetPlayers()) do
+        if (ply.id == message[2]) then
+            sender = ply.nick
+            break
+        end
+    end
+
+    table.insert(messages,sender..": "..msg)
 end
 
 function handleKeyInput()
     UiMakeInteractive()
+
     for i=1,#keys,1 do
         if InputPressed(keys[i]) and i ~= 38 then
               if InputDown("shift") then
-                  chat_msg = chat_msg..keys_shifted[i]
+                input = input..keys_shifted[i]
               else
-                  chat_msg = chat_msg..keys[i]
+                input = input..keys[i]
               end
         elseif InputPressed(keys[i]) and i == 38 then
             if InputDown("shift") then --fixes weird =/+ handling
-                chat_msg = chat_msg.."+"
+                input = input.."+"
             else
-                chat_msg = chat_msg.."="
+                input = input.."="
             end
         end
     end
     if InputPressed("space") then
-        chat_msg = chat_msg.." "
-    end
-
-
-    if InputPressed("return") then
-        if (string.gsub(chat_msg, " ", "") == "") then
-            chatState = false
-            return
-        end
-        chat_msg = clientNick..": "..chat_msg
-        TDMP_ClientStartEvent("MessageSent", {
-            Receiver = TDMP.Enums.Receiver.ClientsOnly,
-            Reliable = true,
-
-            DontPack = true,
-            Data = chat_msg
-        })
-        chatState = false
-        chat_msg = ""
+        input = input.." "
     end
 
     if (InputPressed("backspace")) then
-        chat_msg = string.sub(chat_msg,1,#chat_msg-1)
+        input = string.sub(input,1,#input-1)
+    end
+
+    if InputPressed("return") then
+        if (string.gsub(input, " ", "") == "") then
+            chatState = false
+            return
+        end
+        sendMessage(input)
+        chatState = false
+        input = ""
     end
 end
 
@@ -147,7 +177,7 @@ function drawChatBox(scale)
     UiPush()
         UiScale(scale)
         UiColorFilter(1, 1, 1, scale)
-        UiColor(0,0,0, 0.5)
+        UiColor(0,0,0, 0.5,textboxalpha)
         UiAlign("left top")
         UiImageBox("common/box-solid-shadow-50.png", w, h, -50, -50)
         if InputPressed("esc") or (not UiIsMouseInRect(UiWidth(), UiHeight()) and InputPressed("lmb")) then
@@ -157,17 +187,17 @@ function drawChatBox(scale)
 
     -- text being input
     UiPush()
-        UiFont("bold.ttf", 32)
-        UiColor(1,1,1)
+        UiFont(font, font_size)
+        UiColor(1,1,1,textalpha)
         UiAlign("left")
         UiTranslate(15, h)
-        UiText(chat_msg)
+        UiText(input)
 	UiPop()
 
     -- chat messages
     UiPush()
-        UiFont("bold.ttf", 32)
-        UiColor(1,1,1)
+        UiFont(font, font_size)
+        UiColor(1,1,1,textalpha)
         UiAlign("left")
         UiTranslate(15, 30)
         local text = ""
@@ -197,8 +227,8 @@ function draw_chat()
     end
 
     UiPush()
-        UiFont("bold.ttf", 32)
-        UiColor(1,1,1)
+        UiFont(font, font_size)
+        UiColor(1,1,1,textalpha)
         UiAlign("left")
         UiTranslate(15, 30)
         local text = ""
