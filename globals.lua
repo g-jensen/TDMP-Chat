@@ -17,7 +17,18 @@ keys_shifted = {
 
 -- holds the characters being input in the chat box
 input = ""
+chat_msg = {}
+chat_msg["msg"] = ""
+chat_msg["sender_id"] = nil
+
+bindOpenChat = "t"
 
 -- chatState can be false or true
 chatState = false
 messages = {}
+
+gTDMPScale = 0
+
+clientNick = nil
+clientId = nil
+nicks = {}
