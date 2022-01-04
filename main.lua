@@ -17,6 +17,14 @@ if not TDMP_LocalSteamId then DebugPrint("[TDMP Chat] TDMP is not present, chat 
 #include "tdmp/hooks.lua"
 #include "tdmp/json.lua"
 
+local clientNick = nil
+local clientId = nil
+local nicks = {}
+
+local chat_msg = {}
+chat_msg["msg"] = ""
+chat_msg["sender_id"] = nil
+
 local hasInit = false
 local hostHasConnected = false
 

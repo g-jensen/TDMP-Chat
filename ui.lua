@@ -1,5 +1,8 @@
 #include "globals.lua"
 
+local gTDMPScale = 0
+local bindOpenChat = "t"
+
 function handleKeyInput()
     UiMakeInteractive()
 
