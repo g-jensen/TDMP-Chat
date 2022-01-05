@@ -1,10 +1,10 @@
 if GetInt("savegame.mod.textfontsize") == 0 then -- checks if registry has data, if not set default
 	SetInt("savegame.mod.textfontsize", 20)
-	SetInt("savegame.mod.textalpha", 50)
+	SetInt("savegame.mod.textalpha", 80)
 	SetInt("savegame.mod.textboxalpha", 50)
 end
 
-function optionsSlider(setting, def, mi, ma)
+function optionsSlider(setting, mi, ma)
 	UiColor(1,1,0.5)
 	UiPush()
         UiColor(1,1,0.5)
@@ -81,9 +81,9 @@ function draw()
             UiText("Text alpha")
             UiTranslate(x1, 0)
             UiAlign("left")
-            local val = optionsSlider("savegame.mod.textalpha",100,0,100)
+            local val = optionsSlider("savegame.mod.textalpha",0,100)
             UiTranslate(120, 8)
-            UiText(val / 100)
+            UiText(val.."%")
         UiPop()
 
         UiTranslate(0,40)
@@ -93,9 +93,9 @@ function draw()
             UiText("Text box alpha")
             UiTranslate(x1, 0)
             UiAlign("left")
-            local val = optionsSlider("savegame.mod.textboxalpha",50,0,100)
+            local val = optionsSlider("savegame.mod.textboxalpha",0,100)
             UiTranslate(120, 8)
-            UiText(val / 100)
+            UiText(val.."%")
         UiPop()
 
         UiTranslate(0,40)
@@ -105,7 +105,7 @@ function draw()
             UiText("Text font size")
             UiTranslate(x1, 0)
             UiAlign("left")
-            local val = optionsSlider("savegame.mod.textfontsize",32,16,128)
+            local val = optionsSlider("savegame.mod.textfontsize",16,48)
             UiTranslate(120, 8)
             UiText(val)
         UiPop()
@@ -119,7 +119,7 @@ function draw()
 
     UiTranslate(0, 200)
     UiAlign("center")
-    if UiTextButton("Close", 200, 40) then
+    if UiTextButton("Save & exit", 200, 40) then
         Menu()
     end
 end

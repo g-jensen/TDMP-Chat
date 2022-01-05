@@ -41,7 +41,7 @@ local bindOpenChat = "t"
 
 if GetInt("savegame.mod.textfontsize") == 0 then -- checks if registry has data, if not set default
 	SetInt("savegame.mod.textfontsize", 20)
-	SetInt("savegame.mod.textalpha", 50)
+	SetInt("savegame.mod.textalpha", 80)
 	SetInt("savegame.mod.textboxalpha", 50)
 end
 
@@ -188,7 +188,7 @@ function drawChatBox(scale)
     -- text being input
     UiPush()
         UiFont(font, font_size)
-        UiColor(1,1,1,textalpha)
+        UiColor(1,1,1,1)
         UiAlign("left")
         UiTranslate(15, h)
         UiText(input)
@@ -197,7 +197,7 @@ function drawChatBox(scale)
     -- chat messages
     UiPush()
         UiFont(font, font_size)
-        UiColor(1,1,1,textalpha)
+        UiColor(1,1,1,1)
         UiAlign("left")
         UiTranslate(15, 30)
         local text = ""
