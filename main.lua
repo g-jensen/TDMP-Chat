@@ -1,13 +1,16 @@
 --[[ TODO:
-      -add movable cursor
+    -add movable cursor
         -add del button
-      -preety it up
-      -add selecting by shift
-      -add jumping cursor by ctrl
+    -preety it up
+    -add selecting by shift
+    -add jumping cursor by ctrl
         -add selecting by shift + crtl
-
+    -add options.lua
+        -nick color
+        -buffer size
+        -position
+        -death messages
 ]]
-
 
 #include "tdmp/networking.lua"
 #include "tdmp/player.lua"
@@ -36,10 +39,16 @@ chat_msg["sender_id"] = nil
 
 local bindOpenChat = "t"
 
+if GetInt("savegame.mod.textfontsize") == 0 then -- checks if registry has data, if not set default
+	SetInt("savegame.mod.textfontsize", 20)
+	SetInt("savegame.mod.textalpha", 50)
+	SetInt("savegame.mod.textboxalpha", 50)
+end
+
 local font = "fonts/UbuntuMono-Regular.ttf"
-local textalpha = 1 --GetInt("savegame.mod.textalpha") / 100
-local textboxalpha = 0.5 --GetInt("savegame.mod.textboxalpha") / 100
-local font_size = 28 --GetInt("savegame.mod.textfontsize")
+local textalpha = GetInt("savegame.mod.textalpha") / 100
+local textboxalpha = GetInt("savegame.mod.textboxalpha") / 100
+local font_size = GetInt("savegame.mod.textfontsize")
 
 -- chatState can be false or true
 local chatState = false
@@ -47,8 +56,6 @@ local messages = {}
 
 gTDMPScale = 0
 
-local clientNick = nil
-local clientId = nil
 local nicks = {}
 
 local hasInit = false
@@ -61,7 +68,7 @@ function update(dt)
 end
 
 function tick(dt)
-    if clientNick then hostHasConnected = true else getNicks() end
+    if clientId then hostHasConnected = true else getNicks() end
     if (hostHasConnected and hasInit ~= true) then server_init() hasInit = true end
 
 end
@@ -70,9 +77,7 @@ TDMP_RegisterEvent("MessageSent", function(message)
 
     decodeMessage(message)
 
-    if not TDMP_IsServer() then
-        return
-    end -- if not a host stop
+    if not TDMP_IsServer() then return end -- if not a host stop
 
     TDMP_ServerStartEvent("MessageSent", {
         Receiver = TDMP.Enums.Receiver.ClientsOnly,
@@ -88,7 +93,6 @@ function getNicks()
     for i, ply in ipairs(TDMP_GetPlayers()) do
         nicks[ply.id] = ply.nick
         if TDMP_IsMe(ply.id) then
-            clientNick = ply.nick
             clientId = ply.id
         end
     end
@@ -97,10 +101,6 @@ end
 -- server is initialized
 function server_init() 
     chat_msg["sender_id"] = clientId
-    
-    for i=0,#nicks,1 do
-        DebugPrint(nicks[i])
-    end
 end
 
 function sendMessage(message) 
