@@ -1,23 +1,23 @@
 --[[ TODO:
     -add movable cursor
         -add del button
-    -preety it up
-    -add selecting by shift
-    -add jumping cursor by ctrl
+        -add selecting by shift
+        -add jumping cursor by ctrl
         -add selecting by shift + crtl
+    -preety it up
     -add options.lua
         -nick color
         -buffer size
         -position
-        -death messages
+    -death messages
 ]]
+if not TDMP_LocalSteamId then DebugPrint("[TDMP Chat] TDMP is not present, chat mod will be disbled") return end
 
 #include "tdmp/networking.lua"
 #include "tdmp/player.lua"
 #include "tdmp/hooks.lua"
 #include "tdmp/json.lua"
 
-if not TDMP_LocalSteamId then DebugPrint("[TDMP Chat] TDMP is not present, chat mod will be disbled") return end
 
 local keys = {
     "a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
@@ -49,6 +49,7 @@ local font = "fonts/UbuntuMono-Regular.ttf"
 local textalpha = GetInt("savegame.mod.textalpha") / 100
 local textboxalpha = GetInt("savegame.mod.textboxalpha") / 100
 local font_size = GetInt("savegame.mod.textfontsize")
+local nick_color = {1,0.5,2}
 
 -- chatState can be false or true
 local chatState = false
@@ -76,6 +77,7 @@ end
 TDMP_RegisterEvent("MessageSent", function(message)
 
     decodeMessage(message)
+    DebugPrint(message)
 
     if not TDMP_IsServer() then return end -- if not a host stop
 
@@ -100,32 +102,24 @@ end
 
 -- server is initialized
 function server_init() 
-    chat_msg["sender_id"] = clientId
 end
 
 function sendMessage(message) 
-    chat_msg["msg"] = input
+    --chat_msg["msg"] = input
     TDMP_ClientStartEvent("MessageSent", {
         Receiver = TDMP.Enums.Receiver.ClientsOnly,
         Reliable = true,
-
         DontPack = false,
-        Data = {chat_msg["msg"],chat_msg["sender_id"]}
+        --Data = {chat_msg["msg"],clientId}
+        Data = {input,clientId}
     })
 end
 
 function decodeMessage(message)
     message = json.decode(message)
     local msg = message[1]
-    local sender = ""
-    for i, ply in ipairs(TDMP_GetPlayers()) do
-        if (ply.id == message[2]) then
-            sender = ply.nick
-            break
-        end
-    end
-
-    table.insert(messages,sender..": "..msg)
+    local sender = nicks[message[2]]
+    table.insert(messages,{sender,msg})
 end
 
 function handleKeyInput()
@@ -146,13 +140,10 @@ function handleKeyInput()
             end
         end
     end
-    if InputPressed("space") then
-        input = input.." "
-    end
 
-    if (InputPressed("backspace")) then
-        input = string.sub(input,1,#input-1)
-    end
+    if InputPressed("space") then input = input.." " end
+
+    if (InputPressed("backspace")) then input = string.sub(input,1,#input-1) end
 
     if InputPressed("return") then
         if (string.gsub(input, " ", "") == "") then
@@ -200,12 +191,13 @@ function drawChatBox(scale)
         UiColor(1,1,1,1)
         UiAlign("left")
         UiTranslate(15, 30)
-        local text = ""
+--[[         local text = ""
         for i=#messages,1,-1 do
             text = text..messages[i].."\n"
         end
-        if #messages > 20 then table.remove(messages,1) end
-        UiText(text)
+        if #messages > 20 then table.remove(messages,1) end ]]
+        --UiText(messages[1][1])
+        --DebugPrint(#messages[1])
 	UiPop()
 
     return open
@@ -226,9 +218,9 @@ function draw_chat()
         end
     end
 
-    UiPush()
+   --[[  UiPush()
         UiFont(font, font_size)
-        UiColor(1,1,1,textalpha)
+        UiColor(nick_color,textalpha)
         UiAlign("left")
         UiTranslate(15, 30)
         local text = ""
@@ -238,6 +230,25 @@ function draw_chat()
             end
         end
         UiText(text)
+	UiPop() ]]
+
+     UiPush()
+        UiFont(font, font_size)
+        UiColor(nick_color,textalpha)
+        UiAlign("left")
+        UiTranslate(15, 30)
+        if #messages ~= 0 then
+            UiText(messages[1][1]..": ")
+            UiColor(1,1,1,textalpha)
+            UiText((string.rep(" ",#messages[1][1]+2))..messages[1][2])
+        end
+        --[[ local text = ""
+        for i=#messages,#messages-4,-1 do
+            if (i > 0) then
+                text = text..messages[i].."\n"
+            end
+        end ]]
+        --UiText(text)
 	UiPop()
 
     if InputPressed(bindOpenChat) and chatState == false then
