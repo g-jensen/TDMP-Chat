@@ -104,14 +104,64 @@ function draw()
             UiText(val)
         UiPop()
 
-        UiTranslate(0,40)
+        UiTranslate(0,80)
+
+
+		local r = GetInt("savegame.mod.textcolor_r")
+		local g = GetInt("savegame.mod.textcolor_g")
+		local b = GetInt("savegame.mod.textcolor_b")
+
+		UiPush()
+			UiFont("bold.ttf", 32)
+			UiText("Text color")
+			UiTranslate(200,0)
+			UiColor(r / 255,g / 255,b / 255)
+			UiImageBox("common/box-solid-shadow-50.png", 150, 15, -50, -50)
+		UiPop()
+
+		UiPush()
+            UiFont("bold.ttf", 32)
+			UiTranslate(10,40)
+            UiText("r: ")
+            UiTranslate(x1, 0)
+            UiAlign("left")
+            r = optionsSlider("savegame.mod.textcolor_r",255,0,255)
+            UiTranslate(120, 8)
+            UiText(r)
+		UiPop()
+
+		UiTranslate(0,40)
+
+		UiPush()
+			UiFont("bold.ttf", 32)
+			UiTranslate(10,40)
+			UiText("g: ")
+			UiTranslate(x1, 0)
+			UiAlign("left")
+			g = optionsSlider("savegame.mod.textcolor_g",255,0,255)
+			UiTranslate(120, 8)
+			UiText(g)
+		UiPop()
+
+		UiTranslate(0,40)
+
+		UiPush()
+			UiFont("bold.ttf", 32)
+			UiTranslate(10,40)
+			UiText("b: ")
+			UiTranslate(x1, 0)
+			UiAlign("left")
+			b = optionsSlider("savegame.mod.textcolor_b",255,0,255)
+			UiTranslate(120, 8)
+			UiText(b)
+		UiPop()
 
         --doesnt work for now
         --optionsInputDesc("Open chat bind", "options.input.keymap.openchat", x1, true)
 
     UiPop()
 
-    UiTranslate(0, 200)
+    UiTranslate(0, 400)
     UiAlign("center")
     if UiTextButton("Close", 200, 40) then
         Menu()
