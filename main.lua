@@ -18,7 +18,6 @@ if not TDMP_LocalSteamId then DebugPrint("[TDMP Chat] TDMP is not present, chat 
 #include "tdmp/hooks.lua"
 #include "tdmp/json.lua"
 
-
 local keys = {
     "a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
     "1","2","3","4","5","6","7","8","9","0",
@@ -33,9 +32,6 @@ local keys_shifted = {
 
 -- holds the characters being input in the chat box
 local input = ""
-local chat_msg = {}
-chat_msg["msg"] = ""
-chat_msg["sender_id"] = nil
 
 local bindOpenChat = "t"
 
@@ -49,18 +45,26 @@ local font = "fonts/UbuntuMono-Regular.ttf"
 local textalpha = GetInt("savegame.mod.textalpha") / 100
 local textboxalpha = GetInt("savegame.mod.textboxalpha") / 100
 local font_size = GetInt("savegame.mod.textfontsize")
-local nick_color = {1,0.5,2}
+local nicks_color = {1,0.5,2}
 
 -- chatState can be false or true
 local chatState = false
 local messages = {}
 
-gTDMPScale = 0
-
 local nicks = {}
 
 local hasInit = false
 local hostHasConnected = false
+
+-- chat log window variables
+local TDMP_window = {}
+TDMP_window.pos = 0
+TDMP_window.possmooth = 0
+TDMP_window.dragstarty = 0
+TDMP_window.isdragging = false
+local n_w = 600
+local n_h = 200
+local TDMP_chat_scale = 1
 
 function init()
 end
@@ -102,6 +106,8 @@ end
 
 -- server is initialized
 function server_init() 
+    DebugPrint("serv init")
+    --SetValue("TDMP_chat_scale", 1, "easein", 2)
 end
 
 function sendMessage(message) 
@@ -118,23 +124,12 @@ function decodeMessage(message)
     local msg = message[1]
     local sender = nicks[message[2]]
     table.insert(messages,{sender,msg})
-    bend_to_my_will(sender..": "..msg)
 end
 
-function bend_to_my_will(payload)
-    local mod = {}
-	mod.id = #gMods[2].items+1
-	mod.name = payload
-	mod.active = false
-	mod.steamtime = 1
-	mod.subscribetime = 1
-	mod.showbold = false;
-	gMods[2].items[#gMods[2].items+1] = mod
-end
 
 
 function handleKeyInput()
-    UiMakeInteractive()
+    -- UiMakeInteractive()
 
     for i=1,#keys,1 do
         if InputPressed(keys[i]) and i ~= 38 then
@@ -167,7 +162,7 @@ function handleKeyInput()
     end
 end
 
-function drawChatBox(scale)
+--[[ function drawChatBox(scale)
 
     handleKeyInput()
 
@@ -205,9 +200,9 @@ function drawChatBox(scale)
 	UiPop()
 
     return open
-end
+end ]]
 
-function draw_chat()
+--[[ function draw_chat()
     if chatState == true then
         if gTDMPScale > 0 then
             UiPush()
@@ -225,13 +220,13 @@ function draw_chat()
 
      UiPush()
         UiFont(font, font_size)
-        UiColor(nick_color,textalpha)
+        UiColor(nicks_color,textalpha)
         UiAlign("left")
         UiTranslate(15, 30)
         if #messages ~= 0 then
             UiText(messages[1][1]..": ")
             UiColor(1,1,1,textalpha)
-            UiText((string.rep(" ",#messages[1][1]+2))..messages[1][2])
+            UiText((string.rep(" ",#messages[1][1]+2))..messages[1][2]) -- TODO: redo it with UiSize or smthing (see TD API)
         end
 	UiPop()
 
@@ -239,13 +234,18 @@ function draw_chat()
         chatState = true
         SetValue("gTDMPScale", 1, "cosine", 0.25)
     end
-end
+end ]]
 
 function draw()
-    draw_chat()
-    if not InputPressed("q") then UiMakeInteractive() end
-    drawCreate(1)
+    --draw_chat()
+    --UiMakeInteractive()
+    draw_chat_window(TDMP_chat_scale, true)
 end
+--[[ 
+for i=1,17 do
+    table.insert(messages, {"ni"..i, "msg"..i})
+end
+ ]]
 
 function clamp(value, mi, ma)
 	if value < mi then value = mi end
@@ -253,269 +253,156 @@ function clamp(value, mi, ma)
 	return value
 end
 
-gMods = {}
-for i=1,3 do
-	gMods[i] = {}
-	gMods[i].items = {}
-	gMods[i].pos = 0
-	gMods[i].possmooth = 0
-	gMods[i].sort = 0
-	gMods[i].filter = 0
-	gMods[i].dragstarty = 0
-	gMods[i].isdragging = false
-end
-gMods[1].title = "Built-In"
-gMods[2].title = "Subscribed"
-gMods[3].title = "Local files"
 
-gModSelectedScale = 0
-
-
-
-
-
-function drawCreate(scale)
-	local open = true
+function draw_chat_window(scale, input) --totally not copied and modified script for menu.lua
+    local b_w = n_w
+    local b_h = n_h
+    local text_w = n_w - 14
+    local text_h = n_h 
+    if input then
+        b_h = n_h + 60
+    end
 	UiPush()
-		local w = 890
-		local h = 604 + gModSelectedScale*270
-		UiTranslate(UiCenter(), UiMiddle())
+		UiTranslate(50, 50)
 		UiScale(scale)
 		UiColorFilter(1, 1, 1, scale)
 		UiColor(0,0,0, 0.5)
-		UiAlign("center middle")
-		UiImageBox("common/box-solid-shadow-50.png", w, h, -50, -50)
-		UiWindow(w, h)
+		UiAlign("left top")
+		UiImageBox("common/box-solid-shadow-50.png", b_w, b_h, -50, -50)
+		UiWindow(b_w, b_h)
 		UiAlign("left top")
 		UiColor(0.96,0.96,0.96)
-		if InputPressed("esc") or (not UiIsMouseInRect(UiWidth(), UiHeight()) and InputPressed("lmb")) then
-			open = false
-			gMods[1].isdragging = false;
-			gMods[2].isdragging = false;
-			gMods[3].isdragging = false;
-		end
-
-		UiPush()
-			UiFont("bold.ttf", 48)
-			UiColor(1,1,1)
-			UiAlign("center")
-			UiTranslate(UiCenter(), 60)
-			UiText("MODS")
-		UiPop()
 
 		UiPush()
 
-			UiTranslate(30, 220)
-			UiPush()
-			local i = 2
-				UiPush()
-					UiFont("bold.ttf", 22)
-					UiAlign("left")
-					UiText(gMods[i].title)
-					UiTranslate(0, 10)
-					local h = 338
-					if i==2 then
-						h = 271
-						UiTranslate(0, 32)
-					end
+            if TDMP_window.isdragging and InputReleased("lmb") then
+                TDMP_window.isdragging = false
+            end
+            UiPush()
+                UiAlign("top left")
+                UiFont(font, font_size)
+        
+                local mouseOver = UiIsMouseInRect(text_w, text_h)
+                if mouseOver then
+                    TDMP_window.pos = TDMP_window.pos + InputValue("mousewheel")
+                    if TDMP_window.pos > 0 then
+                        TDMP_window.pos = 0
+                    end
+                end
+                if not UiReceivesInput() then
+                    mouseOver = false
+                end
+                
+                local itemsInView = math.floor(text_h/UiFontHeight())
+                if #messages > itemsInView then
+                    local scrollCount = (#messages-itemsInView)
+                    if scrollCount < 0 then scrollCount = 0 end
+        
+                    local frac = itemsInView / #messages
+                    local pos = -TDMP_window.possmooth / #messages
+                    if TDMP_window.isdragging then
+                        local posx, posy = UiGetMousePos()
+                        local dy = 0.0445 * (posy - TDMP_window.dragstarty)
+                        TDMP_window.pos = -dy / frac
+                    end
+        
+                    UiPush()
+                        UiTranslate(text_w, 0)
+                        UiColor(1,1,1, 0.07)
+                        UiImageBox("common/box-solid-4.png", 14, text_h, 4, 4)
+                        UiColor(1,1,1, 0.2)
+        
+                        local bar_posy = 2 + pos*(text_h-4)
+                        local bar_sizey = (text_h-4)*frac
+                        UiPush()
+                            UiTranslate(2,2)
+                            if bar_posy > 2 and UiIsMouseInRect(8, bar_posy-2) and InputPressed("lmb") then
+                                TDMP_window.pos = TDMP_window.pos + frac * #messages
+                            end
+                            local h2 = text_h - 4 - bar_sizey - bar_posy
+                            UiTranslate(0,bar_posy + bar_sizey)
+                            if h2 > 0 and UiIsMouseInRect(10, h2) and InputPressed("lmb") then
+                                TDMP_window.pos = TDMP_window.pos - frac * #messages
+                            end
+                        UiPop()
+        
+                        UiTranslate(2,bar_posy)
+                        UiImageBox("common/box-solid-4.png", 10, bar_sizey, 4, 4)
+                        --UiRect(10, bar_sizey)
+                        if UiIsMouseInRect(10, bar_sizey) and InputPressed("lmb") then
+                            local posx, posy = UiGetMousePos()
+                            TDMP_window.dragstarty = posy
+                            TDMP_window.isdragging = true
+                        end
+                    UiPop()
+                    TDMP_window.pos = clamp(TDMP_window.pos, -scrollCount, 0)
+                else
+                    TDMP_window.pos = 0
+                    TDMP_window.possmooth = 0
+                end
+        
+                UiWindow(text_w, text_h, true)
+                UiColor(1,1,1,0.07)
+                UiImageBox("common/box-solid-6.png", text_w, text_h, 6, 6)
+        
+                UiTranslate(10, 24)
+                if TDMP_window.isdragging then
+                    TDMP_window.possmooth = TDMP_window.pos
+                else
+                    TDMP_window.possmooth = TDMP_window.possmooth + (TDMP_window.pos-TDMP_window.possmooth) * 10 * GetTimeStep()
+                end
+                UiTranslate(0, TDMP_window.possmooth*22)
+        
+                UiAlign("left")
+                UiColor(0.95,0.95,0.95,1)
+                for i=1, #messages do
+                    --[[ UiPush()
+                        UiTranslate(10, -18)
+                        UiColor(0,0,0,0)
+                        local id = i
+                        if gModSelected == id then
+                            UiColor(1,1,1,0.1)
+                        else
+                            if mouseOver and UiIsMouseInRect(228, 22) then
+                                UiColor(0,0,0,0.1)
+                            end
+                        end
+                        if mouseOver and UiIsMouseInRect(228, 22) and InputPressed("rmb") then
+                            ret = id
+                            rmb_pushed = true
+                        end
+                        UiRect(w, 22)
+                    UiPop() ]] -- FEAUTURE: if we need selecting msg try using this
+        
+                    UiPush()
+                        -- UiTranslate(10, 0)
+                        --UiFont("bold.ttf", 20)
+                    UiColor(nicks_color, 1)
+                    UiText(messages[i][1]..":") 
+                    UiTranslate(UiGetTextSize(messages[i][1]..': '), 0)
+                    UiColor(1,1,1,1)
+                    UiText(messages[i][2])
+                    UiPop()
+                    UiTranslate(0, 22)
+                end
+        
+                if not rmb_pushed and mouseOver and InputPressed("rmb") then
+                    rmb_pushed = true
+                end
+        
+            UiPop()
 
-					local selected, rmb_pushed = listMods(gMods[i], 500, h, i==2)
-					if selected ~= "" then
-						selectMod(selected)
-						if i==2 then
-							updateMods()
-						end
-					end
-
-					if i == 2 then
-						UiPush()
+						--[[ UiPush()
 							UiTranslate(40, -11)
 							UiFont("regular.ttf", 19)
 							UiAlign("center")
 							UiColor(1,1,1,0.8)
 							UiButtonImageBox("common/box-solid-4.png", 4, 4, 1, 1, 1, 0.1)
 							if UiTextButton("delete firts", 80, 26) then
-								table.remove(gMods[2].items,1)
+								table.remove(messages,1)
 							end
-						UiPop()
-						UiPush()
-							UiTranslate(167, -11)
-							UiFont("regular.ttf", 19)
-							UiAlign("center")
-							UiColor(1,1,1,0.8)
-							UiButtonImageBox("common/box-solid-4.png", 4, 4, 1, 1, 1, 0.1)
-						UiPop()
-					end
-
-					
-				UiPop()
-				
-				
-				UiTranslate(290, 0)
-			-- end
-			UiPop()
-
-			UiColor(0,0,0,0.1)
-
-			UiTranslate(0, 380)
-			
-			UiPop()
+						UiPop() ]]
 		UiPop()
 	UiPop()
 
 end
-
-
-function listMods(list, w, h, issubscribedlist)
-	local ret = ""
-	local rmb_pushed = false
-	if list.isdragging and InputReleased("lmb") then
-		list.isdragging = false
-	end
-	UiPush()
-		UiAlign("top left")
-		UiFont("regular.ttf", 22)
-
-		local mouseOver = UiIsMouseInRect(w+12, h)
-		if mouseOver then
-			list.pos = list.pos + InputValue("mousewheel")
-			if list.pos > 0 then
-				list.pos = 0
-			end
-		end
-		if not UiReceivesInput() then
-			mouseOver = false
-		end
-
-		local itemsInView = math.floor(h/UiFontHeight())
-		if #list.items > itemsInView then
-			local scrollCount = (#list.items-itemsInView)
-			if scrollCount < 0 then scrollCount = 0 end
-
-			local frac = itemsInView / #list.items
-			local pos = -list.possmooth / #list.items
-			if list.isdragging then
-				local posx, posy = UiGetMousePos()
-				local dy = 0.0445 * (posy - list.dragstarty)
-				list.pos = -dy / frac
-			end
-
-			UiPush()
-				UiTranslate(w, 0)
-				UiColor(1,1,1, 0.07)
-				UiImageBox("common/box-solid-4.png", 14, h, 4, 4)
-				UiColor(1,1,1, 0.2)
-
-				local bar_posy = 2 + pos*(h-4)
-				local bar_sizey = (h-4)*frac
-				UiPush()
-					UiTranslate(2,2)
-					if bar_posy > 2 and UiIsMouseInRect(8, bar_posy-2) and InputPressed("lmb") then
-						list.pos = list.pos + frac * #list.items
-					end
-					local h2 = h - 4 - bar_sizey - bar_posy
-					UiTranslate(0,bar_posy + bar_sizey)
-					if h2 > 0 and UiIsMouseInRect(10, h2) and InputPressed("lmb") then
-						list.pos = list.pos - frac * #list.items
-					end
-				UiPop()
-
-				UiTranslate(2,bar_posy)
-				UiImageBox("common/box-solid-4.png", 10, bar_sizey, 4, 4)
-				--UiRect(10, bar_sizey)
-				if UiIsMouseInRect(10, bar_sizey) and InputPressed("lmb") then
-					local posx, posy = UiGetMousePos()
-					list.dragstarty = posy
-					list.isdragging = true
-				end
-			UiPop()
-			list.pos = clamp(list.pos, -scrollCount, 0)
-		else
-			list.pos = 0
-			list.possmooth = 0
-		end
-
-		UiWindow(w, h, true)
-		UiColor(1,1,1,0.07)
-		UiImageBox("common/box-solid-6.png", w, h, 6, 6)
-
-		UiTranslate(10, 24)
-		if list.isdragging then
-			list.possmooth = list.pos
-		else
-			list.possmooth = list.possmooth + (list.pos-list.possmooth) * 10 * GetTimeStep()
-		end
-		UiTranslate(0, list.possmooth*22)
-
-		UiAlign("left")
-		UiColor(0.95,0.95,0.95,1)
-		for i=1, #list.items do
-			UiPush()
-				UiTranslate(10, -18)
-				UiColor(0,0,0,0)
-				local id = list.items[i].id
-				if gModSelected == id then
-					UiColor(1,1,1,0.1)
-				else
-					if mouseOver and UiIsMouseInRect(228, 22) then
-						UiColor(0,0,0,0.1)
-						if InputPressed("lmb") then
-							UiSound("terminal/message-select.ogg")
-							ret = id
-						end
-					end
-				end
-				if mouseOver and UiIsMouseInRect(228, 22) and InputPressed("rmb") then
-					ret = id
-					rmb_sel = id;
-					rmb_pushed = true
-				end
-				UiRect(w, 22)
-			UiPop()
-
-			UiPush()
-				UiTranslate(10, 0)
-				if issubscribedlist and list.items[i].showbold then
-					UiFont("bold.ttf", 20)
-				end
-				UiText(list.items[i].name)
-			UiPop()
-			UiTranslate(0, 22)
-		end
-
-		if not rmb_pushed and mouseOver and InputPressed("rmb") then
-			rmb_pushed = true
-		end
-
-	UiPop()
-
-	return ret, rmb_pushed
-end
-
-
-function updateMods()
-
-
-	gMods[1].items = {}
-	gMods[2].items = {}
-	gMods[3].items = {}
-
-	for i=1,15 do
-		local mod = {}
-		mod.id = i
-		mod.name = "name "..i
-		mod.active = false
-		mod.steamtime = i
-		mod.subscribetime = 23 -1
-		mod.showbold = false;
-
-		gMods[2].items[#gMods[2].items+1] = mod
-	end
-			table.sort(gMods[2].items, function(a, b) return a.id < b.id end)
-end
-
-updateMods()
-
---[[ if showBuiltinContextMenu and InputPressed("esc") or (not UiIsMouseInRect(UiWidth(), UiHeight()) and (InputPressed("lmb") or InputPressed("rmb"))) then
-						showBuiltinContextMenu = false
-					end ]]
