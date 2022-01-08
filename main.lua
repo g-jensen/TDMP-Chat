@@ -17,6 +17,8 @@ local keys_shifted = {
     "_","DO NOT USE","<",">"
 }
 
+local deleteBreaks = {" ","!","@","#","$","%","^","&","*","(",")","_","<",">"}
+
 -- holds the characters being input in the chat box
 local chat_input = ""
 
@@ -143,6 +145,32 @@ function decodeMessage(message) -- decodes json into arrat{tdmp_id, message}
     table.insert(chat_messages,{sender,msg})
 end
 
+function contains(tab,val)
+    for i=1,#tab,1 do
+        if tab[i] == val then
+            return true
+        end
+    end
+    return false
+end
+
+function deleteWordFromEnd(str)
+    local lastChar = string.sub(str,-1)
+    if (contains(deleteBreaks,lastChar)) then
+        str = string.sub(str,1,-2)
+        return str
+    end
+    for i=0,#str,1 do
+        if (contains(deleteBreaks,lastChar) == false) then
+            str = string.sub(str,1,-2)
+            lastChar = string.sub(str,-1)
+        else
+            break
+        end
+    end
+    return str
+end
+
 function handleKeyInput() -- getting key presses
     doBackspace = InputDown("backspace")
     SetBool("game.disablepause", true)  -- disables "esc" pause menu
@@ -167,23 +195,44 @@ function handleKeyInput() -- getting key presses
 
     --backspace holding logic
     if (doBackspace) then
+        local ctrl = InputDown("ctrl")
         dt = dt + 1
         if (hasDeleted == false) then
-            chat_input = string.sub(chat_input,1,-2)
+
+            if (ctrl) then
+                chat_input = deleteWordFromEnd(chat_input)
+            else
+                chat_input = string.sub(chat_input,1,-2)
+            end
+            
             hasDeleted = true;
             dt = 0
         else
             if (hasInitDeleted == false and dt > initDelay) then
-                chat_input = string.sub(chat_input,1,-2)
+
+                if (ctrl) then
+                    chat_input = deleteWordFromEnd(chat_input)
+                else
+                    chat_input = string.sub(chat_input,1,-2)
+                end
+
                 hasInitDeleted = true
                 dt = 0
             end
             if hasInitDeleted and dt > afterDelay then
-                chat_input = string.sub(chat_input,1,-2)
+
+                if (ctrl) then
+                    chat_input = deleteWordFromEnd(chat_input)
+                else
+                    chat_input = string.sub(chat_input,1,-2)
+                end
+
                 dt = 0
             end
         end
     else
+        hasDeleted = false
+        hasInitDeleted = false
         dt = 0
     end
 
