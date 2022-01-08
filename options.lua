@@ -1,6 +1,6 @@
-if GetInt("savegame.mod.textfontsize") == 0 then -- checks if registry has data, if not set default
-	SetInt("savegame.mod.textfontsize", 20)
-	SetInt("savegame.mod.textalpha", 80)
+if GetInt("savegame.mod.textfontsize") == 0 then -- checks if registry has data
+	SetInt("savegame.mod.textfontsize", 25)
+	SetInt("savegame.mod.textalpha", 50)
 	SetInt("savegame.mod.textboxalpha", 50)
 end
 
@@ -105,7 +105,7 @@ function draw()
             UiText("Text font size")
             UiTranslate(x1, 0)
             UiAlign("left")
-            local val = optionsSlider("savegame.mod.textfontsize",16,48)
+            local val = optionsSlider("savegame.mod.textfontsize",16,64)
             UiTranslate(120, 8)
             UiText(val)
         UiPop()
@@ -119,7 +119,7 @@ function draw()
 
     UiTranslate(0, 200)
     UiAlign("center")
-    if UiTextButton("Save & exit", 200, 40) then
+    if UiTextButton("Close", 200, 40) then
         Menu()
     end
 end
