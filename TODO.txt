@@ -1,0 +1,29 @@
+TODO:
+    -add movable cursor (some code already in place for supporting it(i think))
+        -add del button
+        -add selecting by shift
+        -add jumping cursor by ctrl
+        -add selecting by shift + crtl
+    -preety it up (almost done)
+    -add options.lua
+        -custom nick color
+        -buffer size
+        -window size
+        -position (actually will be in pause menu(button))
+        -re-add window alpha
+        
+    -expand beyond chat mod (first of all we need to make solid chat mod)
+        -death messages
+        -TAB minimap or/and gmod style list of players
+        -commands
+            -funny commands
+                -meow - rebrocast one or more players messages as "meow"
+                -nuke - spawn some rockets on some1
+                -disarm - remove all weapons
+                    -rearm - re-arm player
+            -utility
+                -gp - give some1 "power" to commands
+                -rp - above but remove
+                -kick (is it even possible) (i think it is)
+                -tp (to another player) if possible (probably is)
+                -tp (coords) if possible
