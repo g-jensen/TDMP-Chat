@@ -33,6 +33,8 @@ local font_size = GetInt("savegame.mod.textfontsize")
 local nicks_color = {1,0.5,2}
 local bindOpenChat = "t"
 
+local char_max_w = 9
+local char_max_h = 6
 
 
 -- chatState can be false or true
@@ -107,7 +109,6 @@ function tick(dt)
 
 end
 
-
 function getNicks() -- well self explanatory
     for i, ply in ipairs(TDMP_GetPlayers()) do
         nicks[ply.id] = ply.nick
@@ -117,17 +118,12 @@ function getNicks() -- well self explanatory
     end
 end
 
-
-
-
 function decodeMessage(message) -- decodes json into arrat{tdmp_id, message}
     message = json.decode(message)
     local msg = message[1]
     local sender = nicks[message[2]]
     table.insert(chat_messages,{sender,msg})
 end
-
-
 
 function handleKeyInput() -- getting key presses
     SetBool("game.disablepause", true)  -- disables "esc" pause menu
@@ -149,7 +145,7 @@ function handleKeyInput() -- getting key presses
 
     if InputPressed("space") then chat_input = chat_input.." " end
 
-    if (InputPressed("backspace")) then chat_input = string.sub(chat_input,1,#chat_input-1) end
+    if (InputPressed("backspace")) then chat_input = string.sub(chat_input,1,-2) end
 
     if InputPressed("return") then
         if (string.gsub(chat_input, " ", "") == "") then
@@ -168,8 +164,6 @@ function handleKeyInput() -- getting key presses
         chat_input = ""
     end
 end
-
-
 
 function clamp(value, mi, ma) 
 	if value < mi then value = mi end
@@ -245,8 +239,8 @@ function draw_chat_window(scale, input) --totally not copied and modified script
                 if not UiReceivesInput() then
                     mouseOver = false
                 end
-                local text_w_font, text_h_font = UiGetTextSize("Some text")
-                local itemsInView = math.floor(text_h/text_h_font)
+                local char_pixel_w, char_pixel_h = UiGetTextSize("x")
+                local itemsInView = math.floor(text_h/char_pixel_h)
                 if #chat_messages > itemsInView then
                     local scrollCount = (#chat_messages-itemsInView)
                     if scrollCount < 0 then scrollCount = 0 end
@@ -334,21 +328,50 @@ function draw_chat_window(scale, input) --totally not copied and modified script
                         end
                         UiRect(w, 22)
                     UiPop() ]]                                      -- FEAUTURE MAYBE: if we need selecting msg try using this
+                    
+                    local no_lines = math.floor((#chat_messages[i][1] + #chat_messages[i][2]) / char_max_w)
+                    if no_lines < ((#chat_messages[i][1] + #chat_messages[i][2]) / char_max_w) then no_lines = no_lines + 1 end
 
-                    --[[ local no_lines = math.floor(#chat_messages[i][2] / 15)
+
+                    -- DebugPrint((#chat_messages[i][1] + #chat_messages[i][2]) / char_max_w)
+                    -- DebugPrint(no_lines)
                     if no_lines > 1 then -- checks number of lines
+                        --local current_line = ""
+                        local nick_char = #chat_messages[i][2] + 2
                         UiPush()
                         for j=1,no_lines do
+                            UiPush()
                             if j == 1 then
-                            UiColor(nicks_color, 1)
-                            UiText(chat_messages[i][1]..":") 
-                        UiTranslate(UiGetTextSize(chat_messages[i][1]..': '), 0)
-                        UiColor(1,1,1,1)
+                                UiColor(nicks_color, 1)
+                                UiText(chat_messages[i][1]..":") 
+                                UiTranslate(UiGetTextSize(chat_messages[i][1]..': '), 0)
+                                UiColor(1,1,1,1)
+                                --UiText(chat_messages[i][2])
+                                UiText(string.sub(chat_messages[i][2],1,(char_max_w-nick_char)))
+                                -- UiTranslate(0, 22)
+                                -- string.sub(chat_input,1,#chat_input-1)
+                            elseif j == no_lines then
+                                UiColor(1,1,1,1)
+                                --UiText(chat_messages[i][2])
+                                UiText(string.sub(chat_messages[i][2],((j-1)*char_max_w+1-nick_char),-1))
+                                -- UiTranslate(0, 22)
+                            else
+                                UiColor(1,1,1,1)
+                                --UiText(chat_messages[i][2])
+                                UiText(string.sub(chat_messages[i][2],((j-1)*char_max_w+1-nick_char),((j*char_max_w)-nick_char)))
+                                -- UiTranslate(0, 22)
+                            end
+                            UiPop()
+                            UiTranslate(0, 22)
+                        end
+
+                        --UiTranslate(UiGetTextSize(chat_messages[i][1]..': '), 0)
+                        
                         --UiWordWrap(200)
-                        UiText(chat_messages[i][2])
-                        UiPop()
-                        UiTranslate(0, 22)
-                    else ]]
+                        --UiText(chat_messages[i][2])
+                        
+                        --UiTranslate(0, 22)
+                    else 
                         UiPush()
                         -- UiTranslate(10, 0)
                         --UiFont("bold.ttf", 20)
@@ -360,7 +383,7 @@ function draw_chat_window(scale, input) --totally not copied and modified script
                         UiText(chat_messages[i][2])
                         UiPop()
                         UiTranslate(0, 22)
-                    -- end
+                    end
                     
                 end
         
