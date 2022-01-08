@@ -57,6 +57,24 @@ local n_w = 600                     -- TODO: change to font_size and character p
 local n_h = 220
 local TDMP_chat_scale = 1
 
+-- holding backspace variables
+local doBackspace = false
+
+-- has deleted the first time (like pressing backspace once)
+local hasDeleted = false
+
+-- has passed the init delay timer
+local hasInitDeleted = false
+
+-- delta frames since last backspace
+local dt = 0;
+
+-- amount of frames before quickly deleting
+local initDelay = 40;
+
+-- amount of frame between quick deletes
+local afterDelay = 5;
+
 -- TDMP stuff
 TDMP_RegisterEvent("MessageSent", function(message)
 
@@ -126,7 +144,9 @@ function decodeMessage(message) -- decodes json into arrat{tdmp_id, message}
 end
 
 function handleKeyInput() -- getting key presses
+    doBackspace = InputDown("backspace")
     SetBool("game.disablepause", true)  -- disables "esc" pause menu
+
     for i=1,#keys,1 do
         if InputPressed(keys[i]) and i ~= 38 then
               if InputDown("shift") then
@@ -145,7 +165,30 @@ function handleKeyInput() -- getting key presses
 
     if InputPressed("space") then chat_input = chat_input.." " end
 
-    if (InputPressed("backspace")) then chat_input = string.sub(chat_input,1,-2) end
+    --backspace holding logic
+    if (doBackspace) then
+        dt = dt + 1
+        if (hasDeleted == false) then
+            chat_input = string.sub(chat_input,1,-2)
+            hasDeleted = true;
+            dt = 0
+        else
+            if (hasInitDeleted == false and dt > initDelay) then
+                chat_input = string.sub(chat_input,1,-2)
+                hasInitDeleted = true
+                dt = 0
+            end
+            if hasInitDeleted and dt > afterDelay then
+                chat_input = string.sub(chat_input,1,-2)
+                dt = 0
+            end
+        end
+    else
+        dt = 0
+    end
+
+    --if (InputPressed("backspace")) then chat_input = string.sub(chat_input,1,-2) end
+
 
     if InputPressed("return") then
         if (string.gsub(chat_input, " ", "") == "") then
