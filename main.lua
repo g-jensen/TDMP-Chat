@@ -20,22 +20,37 @@ local keys_shifted = {
 -- holds the characters being input in the chat box
 local chat_input = ""
 
--- registry (or to be registry) stuff
-if GetInt("savegame.mod.textfontsize") == 0 then -- checks if registry has data, if not set default
+-- registry  stuff
+if GetInt("savegame.mod.pos_x") == 0 then -- checks if registry has data, if not set default
 	SetInt("savegame.mod.textfontsize", 20)
-	SetInt("savegame.mod.textalpha", 80)
-	SetInt("savegame.mod.textboxalpha", 50)
+	SetInt("savegame.mod.chat_window_alpha", 75)
+	SetInt("savegame.mod.nick.r", 0)
+	SetInt("savegame.mod.nick.g", 100)
+	SetInt("savegame.mod.nick.b", 0)
+	SetInt("savegame.mod.size_h", 10)
+	SetInt("savegame.mod.size_w", 75)
+    SetInt("savegame.mod.pos_x", 1)
+    SetInt("savegame.mod.pos_y", 5)
 end
 local font = "fonts/UbuntuMono-Regular.ttf"
-local textalpha = GetInt("savegame.mod.textalpha") / 100
-local textboxalpha = GetInt("savegame.mod.textboxalpha") / 100
+local window_alpha = GetInt("savegame.mod.chat_window_alpha") / 100
 local font_size = GetInt("savegame.mod.textfontsize")
-local nicks_color = {1,0.5,2}
+local nicks_color = {GetInt("savegame.mod.nick.r")/100,GetInt("savegame.mod.nick.g")/100,GetInt("savegame.mod.nick.b")/100}
 local bindOpenChat = "t"
+local chat_log_max = 50
+local pos_x = GetInt("savegame.mod.pos_x")/100
+local pos_y = GetInt("savegame.mod.pos_y")/100
 
-local char_max_w = 10
-local char_max_h = 6
 
+local char_max_w = GetInt("savegame.mod.size_w")
+local char_max_h = GetInt("savegame.mod.size_h")
+local char_pixel_w = math.floor((font_size+1)/2)
+
+local b_w = char_max_w * (char_pixel_w) + 14+20 + char_pixel_w
+local b_h = char_max_h * (font_size + 4)
+local text_w = b_w - 14 - 20
+local text_h = b_h
+local bg_h = 0
 
 -- chatState can be false or true
 local chatState = false
@@ -54,34 +69,20 @@ TDMP_window.dragstarty = 0
 TDMP_window.isdragging = false
 TDMP_window.all_lines = 0
 TDMP_window.refresh = false
-local n_w = 600                     -- TODO: change to font_size and character per line not pixels
-local n_h = 220
-local TDMP_chat_scale = 1
 local input_no_lines = 0
 
 -- holding backspace variables
 local doBackspace = false
-
--- has deleted the first time (like pressing backspace once)
-local hasDeleted = false
-
--- has passed the init delay timer
-local hasInitDeleted = false
-
--- delta frames since last backspace
-local del_t = 0;
-
--- amount of frames before quickly deleting
-local initDelay = 40;
-
--- amount of frame between quick deletes
-local afterDelay = 5;
+local hasDeleted = false -- has deleted the first time (like pressing backspace once)
+local hasInitDeleted = false -- has passed the init delay timer
+local del_t = 0; -- delta frames since last backspace
+local initDelay = 40; -- amount of frames before quickly deleting
+local afterDelay = 5; -- amount of frame between quick deletes
 
 -- TDMP stuff
 TDMP_RegisterEvent("MessageSent", function(message)
 
     decodeMessage(message)
-    DebugPrint(message)
     TDMP_window.refresh = true
 
     if not TDMP_IsServer() then return end -- if not a host stop
@@ -105,20 +106,20 @@ end
 
 -- server is initialized
 function server_init() 
-    DebugPrint("serv init")
-    --SetValue("TDMP_chat_scale", 1, "easein", 2)
 end
 
 function draw()
-    draw_chat_window(TDMP_chat_scale, chatState)
+    UiPush()
+        UiAlign("center middle")
+		UiTranslate((UiWidth()- b_w)*pos_x, (UiHeight()- b_h)*pos_y )
+		draw_chat_window(chatState)
+	UiPop()
+    
 end
 
 function tick(dt)
     if clientId then hostHasConnected = true else getNicks() end
     if (hostHasConnected and hasInit ~= true) then server_init() hasInit = true end  -- initializes init when client established connection to server
-
-
-    --if InputPressed("q") then table.insert(chat_messages, {"ni"..#chat_messages, "msg"..#chat_messages}) end
 
     if InputPressed(bindOpenChat) and chatState == false then  -- handles opening and closing chat
         chatState = true
@@ -128,9 +129,6 @@ function tick(dt)
     end
 
     if doBackspace then del_t = del_t + 1 end
-
-
-    DebugWatch("lines: ",  TDMP_window.all_lines)
 end
 
 function getNicks() -- well self explanatory
@@ -148,7 +146,6 @@ function decodeMessage(message) -- decodes json into arrat{tdmp_id, message}
     local sender = nicks[message[2]]
     local no_lines = math.floor((#sender + #msg +2) / char_max_w)
     if no_lines < ((#sender + #msg +2) / char_max_w) then no_lines = no_lines + 1 end
-    -- DebugPrint(no_lines)
     table.insert(chat_messages,{sender,msg,no_lines})
 end
 
@@ -222,31 +219,7 @@ function clamp(value, mi, ma)
 	return value
 end
 
---[[ function TDMP_window_refresh()
-    DebugPrint("window refreshed")
-    local text_h = n_h - 10
-    local itemsInView = math.floor(text_h/char_pixel_h)
-    TDMP_window.pos = - (#chat_messages - itemsInView)
-    TDMP_window.all_lines = 0
-    for i = 1,#chat_messages do
-        TDMP_window.all_lines = TDMP_window.all_lines + chat_messages[i][3]
-    end
-end ]]
-
-function draw_chat_window(scale, input) --totally not copied and modified script for menu.lua
-    local b_w = n_w
-    local b_h = n_h
-    local text_w = n_w - 14 - 20
-    local text_h = n_h 
-    -- local itemsInView = math.floor(text_h/UiFontHeight())
-    --[[ UiPush()
-    UiFont(font, font_size)
-    local scroll_bar = (#messages > itemsInView)
-    UiPop()
-    DebugWatch("scroll bar: ",scroll_bar) ]]
-    --if not scroll_bar then text_w = n_w end
-
-    
+function draw_chat_window(input) --totally not copied and modified script for menu.lua
     if input then
         
         UiMakeInteractive()
@@ -254,16 +227,16 @@ function draw_chat_window(scale, input) --totally not copied and modified script
         handleKeyInput()
         input_no_lines = math.floor(#chat_input / char_max_w)
         if input_no_lines < (#chat_input / char_max_w) then input_no_lines = input_no_lines + 1 elseif input_no_lines == 0 then input_no_lines = 1 end
-        b_h = n_h + input_no_lines*font_size + 30
+        bg_h = b_h + input_no_lines*font_size + 30
+    else 
+        bg_h = b_h
     end
 	UiPush()
-		UiTranslate(UiMiddle(), 150)
-		UiScale(scale)
-		UiColorFilter(1, 1, 1, scale)
+		if not input then UiColorFilter(1, 1, 1, window_alpha) end
 		UiColor(0,0,0, 0.5)
 		UiAlign("left top")
-		UiImageBox("common/box-solid-shadow-50.png", b_w, b_h, -50, -50)
-		UiWindow(b_w, b_h)
+		UiImageBox("common/box-solid-shadow-50.png", b_w, bg_h, -50, -50)
+		UiWindow(b_w, bg_h)
 		UiAlign("left top")
 		UiColor(0.96,0.96,0.96)
 
@@ -279,10 +252,7 @@ function draw_chat_window(scale, input) --totally not copied and modified script
             UiColor(1,1,1,1)
             UiAlign("left middle")
             UiTranslate(10, (font_size+20)/2)
-            --UiText(chat_input)
-            DebugWatch("input ",#chat_input)
             if #chat_input > 0 then
-                local char_pixel_w, char_pixel_h = UiGetTextSize("x") 
                 if input_no_lines > 1 then
                     for j=1,input_no_lines do
                         if j == 1 then
@@ -292,7 +262,7 @@ function draw_chat_window(scale, input) --totally not copied and modified script
                         else
                             UiText(string.sub(chat_input,((j-1)*char_max_w+1),j*char_max_w))
                         end
-                        UiTranslate(0, char_pixel_h + 4)
+                        UiTranslate(0, font_size + 4)
                     end
                 else
                     UiText(chat_input)
@@ -300,8 +270,9 @@ function draw_chat_window(scale, input) --totally not copied and modified script
             end
 
             UiPop()
+        else 
+            UiColorFilter(1, 1, 1, window_alpha)
         end
-        --UiTranslate(0, 10)
 
             if TDMP_window.isdragging and InputReleased("lmb") then
                 TDMP_window.isdragging = false
@@ -319,16 +290,17 @@ function draw_chat_window(scale, input) --totally not copied and modified script
                 if not UiReceivesInput() then
                     mouseOver = false
                 end
-                local char_pixel_w, char_pixel_h = UiGetTextSize("x") 
-                --DebugPrint(font_size.."|"..char_pixel_h)
-                local itemsInView = math.floor(text_h/(char_pixel_h + 4))
+                local itemsInView = math.floor(text_h/(font_size + 4))
 
                 if TDMP_window.refresh then
-                    TDMP_window.pos = - (#chat_messages - itemsInView)
+                    if #chat_messages > chat_log_max then
+                        table.remove(chat_messages,(#chat_messages-chat_log_max))
+                    end
                     TDMP_window.all_lines = 0
                     for i = 1,#chat_messages do
                         TDMP_window.all_lines = TDMP_window.all_lines + chat_messages[i][3]
                     end
+                    TDMP_window.pos = - (TDMP_window.all_lines - itemsInView)
                     TDMP_window.refresh = false
                 end
 
@@ -366,7 +338,6 @@ function draw_chat_window(scale, input) --totally not copied and modified script
         
                         UiTranslate(2,bar_posy)
                         UiImageBox("common/box-solid-4.png", 10, bar_sizey, 4, 4)
-                        --UiRect(10, bar_sizey)
                         if UiIsMouseInRect(10, bar_sizey) and InputPressed("lmb") then
                             local posx, posy = UiGetMousePos()
                             TDMP_window.dragstarty = posy
@@ -389,15 +360,11 @@ function draw_chat_window(scale, input) --totally not copied and modified script
                 else
                     TDMP_window.possmooth = TDMP_window.possmooth + (TDMP_window.pos-TDMP_window.possmooth) * 10 * GetTimeStep()
                 end
-                UiTranslate(0, TDMP_window.possmooth*22)
+                UiTranslate(0, TDMP_window.possmooth*(font_size + 4))
         
                 UiAlign("left")
                 UiColor(0.95,0.95,0.95,1)
 
-                
-
-                DebugWatch("pos: ",TDMP_window.pos)              -- this is the key forauto scroll
-                -- DebugWatch("scrollCount: ", scrollCount)
                 for i=1, #chat_messages do
                     local no_lines = chat_messages[i][3]
                     --[[ UiPush()
@@ -417,60 +384,36 @@ function draw_chat_window(scale, input) --totally not copied and modified script
                         end
                         UiRect(w, 22)
                     UiPop() ]]                                      -- FEAUTURE MAYBE: if we need selecting msg try using this
-                    
-                    
-
-
-                    -- DebugPrint((#chat_messages[i][1] + #chat_messages[i][2]) / char_max_w)
-                    -- DebugPrint(no_lines)
+                    local nick_char = #chat_messages[i][1] + 2
                     if no_lines > 1 then -- checks number of lines
-                        --local current_line = ""
-                        local nick_char = #chat_messages[i][1] + 2
                         UiPush()
                         for j=1,no_lines do
                             UiPush()
                             if j == 1 then
-                                UiColor(nicks_color, 1)
+                                UiColor(nicks_color[1],nicks_color[2],nicks_color[3],1)
                                 UiText(chat_messages[i][1]..":") 
-                                UiTranslate(UiGetTextSize(chat_messages[i][1]..': '), 0)
+                                UiTranslate(char_pixel_w*nick_char, 0)
                                 UiColor(1,1,1,1)
-                                --UiText(chat_messages[i][2])
                                 UiText(string.sub(chat_messages[i][2],1,(char_max_w-nick_char)))
-                                -- UiTranslate(0, 22)
-                                -- string.sub(chat_input,1,#chat_input-1)
                             elseif j == no_lines then
                                 UiColor(1,1,1,1)
-                                --UiText(chat_messages[i][2])
                                 UiText(string.sub(chat_messages[i][2],((j-1)*char_max_w+1-nick_char),-1))
-                                -- UiTranslate(0, 22)
                             else
                                 UiColor(1,1,1,1)
-                                --UiText(chat_messages[i][2])
                                 UiText(string.sub(chat_messages[i][2],((j-1)*char_max_w+1-nick_char),((j*char_max_w)-nick_char)))
-                                -- UiTranslate(0, 22)
                             end
                             UiPop()
-                            UiTranslate(0, char_pixel_h + 4)
+                            UiTranslate(0, font_size + 4)
                         end
-
-                        --UiTranslate(UiGetTextSize(chat_messages[i][1]..': '), 0)
-                        
-                        --UiWordWrap(200)
-                        --UiText(chat_messages[i][2])
-                        
-                        --UiTranslate(0, 22)
                     else 
                         UiPush()
-                        -- UiTranslate(10, 0)
-                        --UiFont("bold.ttf", 20)
-                        UiColor(nicks_color, 1)
+                        UiColor(nicks_color[1],nicks_color[2],nicks_color[3], 1)
                         UiText(chat_messages[i][1]..":") 
-                        UiTranslate(UiGetTextSize(chat_messages[i][1]..': '), 0)
+                        UiTranslate(char_pixel_w*nick_char, 0)
                         UiColor(1,1,1,1)
-                        --UiWordWrap(200)
                         UiText(chat_messages[i][2])
                         UiPop()
-                        UiTranslate(0, char_pixel_h + 4)
+                        UiTranslate(0, font_size + 4)
                     end
                     
                 end
@@ -480,18 +423,8 @@ function draw_chat_window(scale, input) --totally not copied and modified script
                 end
         
             UiPop()
-
-						--[[ UiPush()
-							UiTranslate(40, -11)
-							UiFont("regular.ttf", 19)
-							UiAlign("center")
-							UiColor(1,1,1,0.8)
-							UiButtonImageBox("common/box-solid-4.png", 4, 4, 1, 1, 1, 0.1)
-							if UiTextButton("delete firts", 80, 26) then
-								table.remove(chat_messages,1)
-							end
-						UiPop() ]]
 		UiPop()
 	UiPop()
+    UiPop()
 
 end

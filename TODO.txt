@@ -1,13 +1,11 @@
 TODO:
-    -add movable cursor (some code already in place for supporting it(i think))
+    -add movable cursor (some code already in place for supporting it(i think)) (do we need it?)
         -add del button
         -add selecting by shift
         -add jumping cursor by ctrl
         -add selecting by shift + crtl
     -preety it up (almost done)
-        -add check if nick takes one or more lines (lol, some edge case af)
-        -wordwrap input text
-            -expand input "border" as more lines
+        -add check if nick takes one or more lines (lol, some edge case af) (idk if really needed)
     -add options.lua
         -custom nick color (client side for now) (implenent)
         -buffer size
